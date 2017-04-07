@@ -20,7 +20,10 @@
   "devDependencies": {
     "mocha": "^2.2.5",
     "rimraf": "^2.4.0",
-    "chai": "^3.0.0"
+    "chai": "^3.0.0",
+    "webgme-bip": "github:anmavrid/webgme-bip"
   },
-  "dependencies": {}
+  "dependencies": {
+
+  }
 }

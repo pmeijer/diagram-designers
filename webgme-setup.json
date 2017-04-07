@@ -29,9 +29,31 @@
         "secondary": false,
         "widget": "src/visualizers/widgets/BIPExecutionViz"
       }
-    }
+    },
+    "decorators": {},
+    "seeds": {}
   },
   "dependencies": {
-    "visualizers": {}
+    "visualizers": {},
+    "decorators": {
+      "BIPComponentTypeDecorator": {
+        "project": "webgme-bip",
+        "path": "node_modules/webgme-bip/src/decorators/BIPComponentTypeDecorator"
+      },
+      "BIPConnectorEndDecorator": {
+        "project": "webgme-bip",
+        "path": "node_modules/webgme-bip/src/decorators/BIPConnectorEndDecorator"
+      },
+      "BIPStateDecorator": {
+        "project": "webgme-bip",
+        "path": "node_modules/webgme-bip/src/decorators/BIPStateDecorator"
+      }
+    },
+    "seeds": {
+      "BIP": {
+        "project": "webgme-bip",
+        "path": "node_modules/webgme-bip/src/seeds/BIP"
+      }
+    }
   }
 }
