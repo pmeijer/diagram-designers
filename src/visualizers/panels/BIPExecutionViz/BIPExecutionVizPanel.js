@@ -58,6 +58,10 @@ define([
             widget: this.widget
         });
 
+        this.control.setReadOnly = function () {
+            self.setReadOnly(true);
+        };
+
         this.onActivate();
     };
 
@@ -66,7 +70,7 @@ define([
     BIPExecutionVizPanel.prototype.onReadOnlyChanged = function (isReadOnly) {
         //apply parent's onReadOnlyChanged
         PanelBaseWithHeader.prototype.onReadOnlyChanged.call(this, isReadOnly);
-
+        this.widget.setReadOnly(isReadOnly);
     };
 
     BIPExecutionVizPanel.prototype.onResize = function (width, height) {
