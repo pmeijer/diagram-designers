@@ -7,6 +7,8 @@ var config = require('webgme/config/config.default'),
     validateConfig = require('webgme/config/validator');
 
 // The paths can be loaded from the webgme-setup.json
+config.visualization.decoratorPaths.push(__dirname + '/../node_modules/webgme-bip/src/decorators');
+config.seedProjects.basePaths.push(__dirname + '/../node_modules/webgme-bip/src/seeds/BIPv1');
 
 
 
@@ -19,11 +21,17 @@ config.visualization.panelPaths.push(__dirname + '/../src/visualizers/panels');
 config.visualization.visualizerDescriptors.push(__dirname + '/../src/visualizers/Visualizers.json');
 // Add requirejs paths
 config.requirejsPaths = {
+  'BIP': 'node_modules/webgme-bip/src/seeds/BIPv1',
+  'BIPStateDecorator': 'node_modules/webgme-bip/src/decorators/BIPStateDecorator',
+  'BIPConnectorEndDecorator': 'node_modules/webgme-bip/src/decorators/BIPConnectorEndDecorator',
+  'BIPComponentTypeDecorator': 'node_modules/webgme-bip/src/decorators/BIPComponentTypeDecorator',
   'panels': './src/visualizers/panels',
-  'widgets': './src/visualizers/widgets'
+  'widgets': './src/visualizers/widgets',
+  'webgme-bip': './node_modules/webgme-bip/src/common',
+  'webgme-bip-editors': './src/common'
 };
 
 
-config.mongo.uri = 'mongodb://127.0.0.1:27017/diagram_designers';
+config.mongo.uri = 'mongodb://127.0.0.1:27017/webgme_bip_editors';
 validateConfig(config);
 module.exports = config;

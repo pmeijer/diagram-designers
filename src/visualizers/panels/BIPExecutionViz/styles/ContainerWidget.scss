@@ -1,0 +1,60 @@
+/**
+ * This file is for any scss that you may want for this visualizer.
+ */
+
+div.bip-execution-container-widget {
+  outline: none;
+
+  &.panel-body {
+    background-color: whitesmoke;
+    &.simulation-mode {
+      background-color: #fff;
+      padding: 0;
+      overflow: hidden;
+    }
+  }
+
+  .configuration-form {
+    width: 30%;
+    border-radius: 5px;
+    min-width: 375px;
+    margin-top: 40px;
+    background-color: #fff;
+    padding: 20px;
+    margin-left: auto;
+    margin-right: auto;
+    .configuration-title {
+      margin-bottom: 10px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    .configuration-desc {
+      margin-bottom: 10px;
+      font-size: 10px;
+    }
+    .form-group {
+      &.btn-container {
+        margin-bottom: 0;
+        margin-top: 20px;
+        .btn-config {
+          margin-left: 20px;
+        }
+      }
+      .control-label {
+        font-size: 12px;
+        font-weight: bold;
+        padding-top: 2px;
+      }
+      .controls {
+        font-size: 10px;
+      }
+    }
+  }
+
+  .panels-container {
+    .panel-container {
+      position: absolute;
+      border: lightgrey solid 1px;
+    }
+  }
+}

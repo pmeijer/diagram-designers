@@ -57,6 +57,7 @@ define([
             y: -1
         };
 
+        this.highlightColors = [];
     };
 
     Connection.prototype._initialize = function (objDescriptor) {
@@ -146,8 +147,8 @@ define([
         this.srcTextEdit = objDescriptor.srcTextEdit || false;
         this.dstTextEdit = objDescriptor.dstTextEdit || false;
 
-        this.lineLabelXOffset = typeof objDescriptor.lineLabelXOffset === 'number' ? objDescriptor.lineLabelXOffset : 0;
         this.lineLabelYOffset = typeof objDescriptor.lineLabelYOffset === 'number' ? objDescriptor.lineLabelYOffset : 0;
+        this.lineLabelXOffset = typeof objDescriptor.lineLabelXOffset === 'number' ? objDescriptor.lineLabelXOffset : 0;
 
         this.showConnectionAreas = typeof objDescriptor[DiagramDesignerWidgetConstants.LINE_SHOW_CONNECTION_AREAS] ===
         'boolean' ? objDescriptor[DiagramDesignerWidgetConstants.LINE_SHOW_CONNECTION_AREAS] : true;
@@ -889,33 +890,80 @@ define([
         }
     };
 
-    Connection.prototype._highlightPath = function () {
+    Connection.prototype._highlightPath = function (color, delay) {
         this._createPathShadow(this._pathPoints);
 
-        this.skinParts.pathShadow.attr({
-            opacity: this.designerAttributes.shadowOpacityWhenSelected,
-            'stroke-width': this.designerAttributes.shadowSelectedWidth
-        });
-        if (this.skinParts.pathShadowArrowStart) {
-            this.skinParts.pathShadowArrowStart.attr({opacity: this.designerAttributes.shadowOpacityWhenSelected});
+        if (color) {
+            this.highlightColors.push(color);
+        } else {
+            color = CONNECTION_SHADOW_DEFAULT_COLOR;
         }
-        if (this.skinParts.pathShadowArrowEnd) {
-            this.skinParts.pathShadowArrowEnd.attr({opacity: this.designerAttributes.shadowOpacityWhenSelected});
+
+        delay = delay || 0;
+
+        if (true) {
+            this.skinParts.pathShadow.animate({
+                opacity: this.designerAttributes.shadowOpacityWhenSelected,
+                'stroke-width': this.designerAttributes.shadowSelectedWidth,
+                stroke: color
+            }, delay);
+            if (this.skinParts.pathShadowArrowStart) {
+                this.skinParts.pathShadowArrowStart.animate({
+                    opacity: this.designerAttributes.shadowOpacityWhenSelected,
+                    stroke: color
+                }, delay);
+            }
+            if (this.skinParts.pathShadowArrowEnd) {
+                this.skinParts.pathShadowArrowEnd.animate({
+                    opacity: this.designerAttributes.shadowOpacityWhenSelected,
+                    stroke: color
+                }, delay);
+            }
+        } else {
+            // this.skinParts.path.animate({stroke: color}, delay);
+            //
+            // if (this.skinParts.arrowStart) {
+            //     this.skinParts.arrowStart.animate({stroke: color}, delay);
+            // }
+            //
+            // if (this.skinParts.arrowEnd) {
+            //     this.skinParts.arrowEnd.animate({stroke: color}, delay);
+            // }
         }
     };
 
-    Connection.prototype._unHighlightPath = function () {
+    Connection.prototype._unHighlightPath = function (color, delay) {
+        var self = this;
+
+        this.highlightColors = [];
+
         if (this.designerAttributes.width < MIN_WIDTH_NOT_TO_NEED_SHADOW) {
-            this.skinParts.pathShadow.attr({
-                opacity: this.designerAttributes.shadowOpacity,
-                'stroke-width': this.designerAttributes.shadowWidth
+
+            this.skinParts.pathShadow.animate({
+                opacity: this.designerAttributes.shadowOpacity
+            }, delay || 0, function () {
+                self.skinParts.pathShadow.attr({'stroke-width': self.designerAttributes.shadowWidth});
             });
+
             if (this.skinParts.pathShadowArrowStart) {
-                this.skinParts.pathShadowArrowStart.attr({opacity: this.designerAttributes.shadowOpacity});
+                this.skinParts.pathShadowArrowStart.animate({opacity: this.designerAttributes.shadowOpacity},
+                    delay || 0);
             }
             if (this.skinParts.pathShadowArrowEnd) {
-                this.skinParts.pathShadowArrowEnd.attr({opacity: this.designerAttributes.shadowOpacity});
+                this.skinParts.pathShadowArrowEnd.animate({opacity: this.designerAttributes.shadowOpacity},
+                    delay || 0);
             }
+
+            // this.skinParts.path.attr({stroke: this.designerAttributes.color});
+            //
+            // if (this.skinParts.arrowStart) {
+            //     this.skinParts.arrowStart.attr({stroke: this.designerAttributes.color});
+            // }
+            //
+            // if (this.skinParts.arrowEnd) {
+            //     this.skinParts.arrowEnd.attr({stroke: this.designerAttributes.color});
+            // }
+
         } else {
             this._removePathShadow();
         }
@@ -1671,6 +1719,8 @@ define([
                 top: pos.y,
                 left: pos.x
             });
+
+            this._connectionAreaMarker.hide();
         }
     };
 
@@ -1683,6 +1733,7 @@ define([
 
     Connection.prototype._textContainer = $('<div class="c-t"></div>');
     Connection.prototype._textNameBase = $('<div class="c-text"><span class="c-name"></span></div>');
+    Connection.prototype._textMultiNameBase = $('<div class="c-text"></div>');
     Connection.prototype._textSrcBase = $('<div class="c-text"><span class="c-src"></span></div>');
     Connection.prototype._textDstBase = $('<div class="c-text"><span class="c-dst"></span></div>');
 
@@ -1741,37 +1792,69 @@ define([
 
         this._hideTexts();
 
-        function drawName() {
-            var pathCenter = self._getMidPoint();
+        function attachRightClickHider(label) {
+            self.skinParts[label].find('.c-name, .c-src, .c-dst').mousedown(function(event) {
+                switch (event.which) {
+                    case 3:
+                        self.skinParts[label].hide();
+                        break;
+                    default:
+                        break;
+                }
+            });
+        }
 
-            self.skinParts.name = self._textNameBase.clone();
+        function drawName() {
+            var pathCenter = self._getMidPoint(),
+                nameStr;
+
+            if (self.name instanceof Array) {
+                if (self.name.length === 1) {
+                    nameStr = self.name[0];
+                }
+            } else {
+                nameStr = self.name;
+            }
+
+            if (nameStr) {
+                self.skinParts.name = self._textNameBase.clone();
+                self.skinParts.name.find('span').text(self.name);
+
+                if ((pathCenter.alpha >= 45 && pathCenter.alpha <= 135) ||
+                    (pathCenter.alpha >= 225 && pathCenter.alpha <= 315)) {
+                    self.skinParts.name.find('span').addClass('v');
+                }
+
+                // set title editable on double-click
+                self.skinParts.name.find('span').on('dblclick.editOnDblClick', null, function (event) {
+                    if (self.nameEdit === true && self.diagramDesigner.getIsReadOnlyMode() !== true) {
+                        $(this).editInPlace({
+                            class: '',
+                            onChange: function (oldValue, newValue) {
+                                self._onNameChanged(oldValue, newValue);
+                            }
+                        });
+                    }
+                    event.stopPropagation();
+                    event.preventDefault();
+                });
+            } else {
+                self.skinParts.name = self._textMultiNameBase.clone();
+                self.name.forEach(function (namePiece) {
+                    var namePieceEl = $('<div class="c-name"></div>').text(namePiece);
+                    self.skinParts.name.append(namePieceEl);
+                });
+            }
+
             self.skinParts.name.css({
                 top: pathCenter.y - 2 + self.designerAttributes.width + self.lineLabelYOffset,
                 left: pathCenter.x + self.lineLabelXOffset,
                 color: self.designerAttributes.color
             });
-            self.skinParts.name.find('span').text(self.name);
+
             self.skinParts.textContainer.append(self.skinParts.name);
+
             $(self.diagramDesigner.skinParts.$itemsContainer.children()[0]).after(self.skinParts.textContainer);
-
-            if ((pathCenter.alpha >= 45 && pathCenter.alpha <= 135) ||
-                (pathCenter.alpha >= 225 && pathCenter.alpha <= 315)) {
-                self.skinParts.name.find('span').addClass('v');
-            }
-
-            // set title editable on double-click
-            self.skinParts.name.find('span').on('dblclick.editOnDblClick', null, function (event) {
-                if (self.nameEdit === true && self.diagramDesigner.getIsReadOnlyMode() !== true) {
-                    $(this).editInPlace({
-                        class: '',
-                        onChange: function (oldValue, newValue) {
-                            self._onNameChanged(oldValue, newValue);
-                        }
-                    });
-                }
-                event.stopPropagation();
-                event.preventDefault();
-            });
         }
 
         function drawSrc() {
@@ -1912,11 +1995,17 @@ define([
 
         if (this.selected) {
             this.skinParts.textContainer.addClass('is-selected');
+            ['name', 'srcText', 'dstText'].forEach(function (label) {
+                if (self.skinParts.hasOwnProperty(label)) {
+                    attachRightClickHider(label);
+                }
+            });
         }
     };
 
     Connection.prototype._hideTexts = function () {
         if (this.skinParts.textContainer) {
+            this.skinParts.textContainer.find('span').off();
             this.skinParts.textContainer.remove();
         }
     };

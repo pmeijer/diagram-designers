@@ -7,7 +7,7 @@
 
 define([
     'js/DragDrop/DragHelper',
-    'widgets/DiagramDesigner/DiagramDesignerWidget'
+    '../DiagramDesigner/DiagramDesignerWidget'
 ], function (DragHelper, DiagramDesignerWidget) {
 
     'use strict';
@@ -22,6 +22,10 @@ define([
         params.addTabs = false;
         params.deleteTabs = false;
         params.reorderTabs = false;
+        params.gridSize = 1;
+        // Routing manager is switched based on context
+        params.defaultConnectionRouteManagerType = 'basic';
+        params.disableConnectionRendering = true;
 
         DiagramDesignerWidget.call(this, container, params);
 
@@ -31,7 +35,8 @@ define([
     _.extend(ModelEditorWidget.prototype, DiagramDesignerWidget.prototype);
 
     ModelEditorWidget.prototype._afterManagersInitialized = function () {
-        //turn on open btn
+        //turn off item rotation
+        this.enableRotate(false);
         this.enableOpenButton(true);
     };
 

@@ -31,56 +31,58 @@ define([
         if (toolbar) {
             this.toolbarItems.beginSeparator = toolbar.addSeparator();
 
-            this.toolbarItems.btnGridLayouts = toolbar.addDropDownButton({
-                title: 'Arrange items',
-                icon: 'glyphicon glyphicon-th',
-                //menuClass: 'split-panel-dropdown-list',
-                clickFn: function () {
-                    self.toolbarItems.btnGridLayouts.clear();
-
-                    self.toolbarItems.btnGridLayouts.addButton({
-                        text: 'Arrange items on canvas compactly',
-                        title: 'Compact Grid Layout',
-                        //icon: 'glyphicon glyphicon-th',
-                        data: {mode: 'grid'},
-                        clickFn: function (data) {
-                            self.itemAutoLayout(data.mode);
-                        }
-                    });
-
-                    self.toolbarItems.btnGridLayouts.addButton({
-                        text: 'Arrange items on canvas sparsely',
-                        title: 'Sparse Grid Layout',
-                        //icon: 'glyphicon glyphicon-th-large',
-                        data: {mode: 'cozygrid'},
-                        clickFn: function (data) {
-                            self.itemAutoLayout(data.mode);
-                        }
-                    });
-                }
-            });
-
-            if (this._enableGrid) {
-                this.toolbarItems.btnToggleGrid = toolbar.addButton({
-                    title: 'Toggle Grid',
-                    icon: 'fa fa-hashtag',
+            if (!this._hideAllEditToolbarBtns) {
+                this.toolbarItems.btnGridLayouts = toolbar.addDropDownButton({
+                    title: 'Arrange items',
+                    icon: 'glyphicon glyphicon-th',
+                    //menuClass: 'split-panel-dropdown-list',
                     clickFn: function () {
-                        self._toggleGrid(true);
+                        self.toolbarItems.btnGridLayouts.clear();
+
+                        self.toolbarItems.btnGridLayouts.addButton({
+                            text: 'Arrange items on canvas compactly',
+                            title: 'Compact Grid Layout',
+                            //icon: 'glyphicon glyphicon-th',
+                            data: {mode: 'grid'},
+                            clickFn: function (data) {
+                                self.itemAutoLayout(data.mode);
+                            }
+                        });
+
+                        self.toolbarItems.btnGridLayouts.addButton({
+                            text: 'Arrange items on canvas sparsely',
+                            title: 'Sparse Grid Layout',
+                            //icon: 'glyphicon glyphicon-th-large',
+                            data: {mode: 'cozygrid'},
+                            clickFn: function (data) {
+                                self.itemAutoLayout(data.mode);
+                            }
+                        });
                     }
                 });
 
-                if (this._displayGrid) {
-                    this._displayGrid = false;
-                    self._toggleGrid();
+                if (this._enableGrid) {
+                    this.toolbarItems.btnToggleGrid = toolbar.addButton({
+                        title: 'Toggle Grid',
+                        icon: 'fa fa-hashtag',
+                        clickFn: function () {
+                            self._toggleGrid(true);
+                        }
+                    });
+
+                    if (this._displayGrid) {
+                        this._displayGrid = false;
+                        self._toggleGrid();
+                    }
                 }
+
+                this.toolbarItems.gridSeparator = toolbar.addSeparator();
             }
 
             if (DEBUG === true) {
                 //progress text in toolbar for debug only
                 this.toolbarItems.progressText = toolbar.addLabel();
             }
-
-            this.toolbarItems.gridSeparator = toolbar.addSeparator();
 
             /************** ROUTING MANAGER SELECTION **************************/
             if (!this._disableConnectionRendering) {
@@ -116,36 +118,38 @@ define([
             }
             /************** END OF - ROUTING MANAGER SELECTION **************************/
 
-            this.toolbarItems.radioButtonGroupOperatingMode = toolbar.addRadioButtonGroup(function (data) {
-                self.setOperatingMode(data.mode);
-            });
+            if (!this._hideAllEditToolbarBtns) {
+                this.toolbarItems.radioButtonGroupOperatingMode = toolbar.addRadioButtonGroup(function (data) {
+                    self.setOperatingMode(data.mode);
+                });
 
-            this.toolbarItems.radioButtonGroupOperatingMode.addButton(
-                {
-                    icon: 'glyphicon glyphicon-lock',
-                    title: 'Read-only mode',
-                    data: {mode: DiagramDesignerWidgetOperatingModes.prototype.OPERATING_MODES.READ_ONLY}
-                }
-            );
+                this.toolbarItems.radioButtonGroupOperatingMode.addButton(
+                    {
+                        icon: 'glyphicon glyphicon-lock',
+                        title: 'Read-only mode',
+                        data: {mode: DiagramDesignerWidgetOperatingModes.prototype.OPERATING_MODES.READ_ONLY}
+                    }
+                );
 
-            this.toolbarItems.radioButtonGroupOperatingMode.addButton(
-                {
-                    icon: 'glyphicon glyphicon-move',
-                    title: 'Design mode',
-                    selected: true,
-                    data: {mode: DiagramDesignerWidgetOperatingModes.prototype.OPERATING_MODES.DESIGN}
-                }
-            );
+                this.toolbarItems.radioButtonGroupOperatingMode.addButton(
+                    {
+                        icon: 'glyphicon glyphicon-move',
+                        title: 'Design mode',
+                        selected: true,
+                        data: {mode: DiagramDesignerWidgetOperatingModes.prototype.OPERATING_MODES.DESIGN}
+                    }
+                );
 
-            this.toolbarItems.radioButtonGroupOperatingMode.addButton(
-                {
-                    icon: 'glyphicon glyphicon-eye-open',
-                    title: 'Highlight mode',
-                    data: {mode: DiagramDesignerWidgetOperatingModes.prototype.OPERATING_MODES.HIGHLIGHT}
-                }
-            );
+                this.toolbarItems.radioButtonGroupOperatingMode.addButton(
+                    {
+                        icon: 'glyphicon glyphicon-eye-open',
+                        title: 'Highlight mode',
+                        data: {mode: DiagramDesignerWidgetOperatingModes.prototype.OPERATING_MODES.HIGHLIGHT}
+                    }
+                );
 
-            this.toolbarItems.modeSeparator = toolbar.addSeparator();
+                this.toolbarItems.modeSeparator = toolbar.addSeparator();
+            }
 
             if (DEBUG === true) {
                 this.toolbarItems.btnXing = toolbar.addToggleButton({
@@ -339,56 +343,60 @@ define([
                 /************** END OF - VISUAL STYLE ARROWS *****************/
             }
 
-            //add fill color, text color, border color controls
-            this.toolbarItems.cpFillColor = toolbar.addColorPicker({
-                    icon: 'glyphicon glyphicon-tint',
-                    title: 'Fill color',
-                    colorChangedFn: function (color) {
-                        self.onSelectionFillColorChanged(self.selectionManager.getSelectedElements(), color);
-                    }
-                }
-            );
-
-            this.toolbarItems.cpBorderColor = toolbar.addColorPicker({
-                    icon: btnIconBase.clone().addClass('gme icon-gme_pen'),
-                    title: 'Border color',
-                    colorChangedFn: function (color) {
-                        self.onSelectionBorderColorChanged(self.selectionManager.getSelectedElements(), color);
-                    }
-                }
-            );
-
-            this.toolbarItems.cpTextColor = toolbar.addColorPicker({
-                    icon: 'glyphicon glyphicon-font',
-                    title: 'Text color',
-                    colorChangedFn: function (color) {
-                        self.onSelectionTextColorChanged(self.selectionManager.getSelectedElements(), color);
-                    }
-                }
-            );
-
-            this.toolbarItems.cpFillColor.enabled(false);
-            this.toolbarItems.cpBorderColor.enabled(false);
-            this.toolbarItems.cpTextColor.enabled(false);
-
-            if (this._defaultSearchUI === true) {
-                this.toolbarItems.filterBox = toolbar.addTextBox(
-                    {
-                        prependContent: '<i class="glyphicon glyphicon-search"></i>&nbsp;',
-                        placeholder: 'Find...',
-                        textChangedFn: function (oldVal, newVal) {
-                            self.searchManager.filterItems(newVal);
+            if (!this._hideAllEditToolbarBtns) {
+                //add fill color, text color, border color controls
+                this.toolbarItems.cpFillColor = toolbar.addColorPicker({
+                        icon: 'glyphicon glyphicon-tint',
+                        title: 'Fill color',
+                        colorChangedFn: function (color) {
+                            self.onSelectionFillColorChanged(self.selectionManager.getSelectedElements(), color);
                         }
-                    });
+                    }
+                );
+
+                this.toolbarItems.cpBorderColor = toolbar.addColorPicker({
+                        icon: btnIconBase.clone().addClass('gme icon-gme_pen'),
+                        title: 'Border color',
+                        colorChangedFn: function (color) {
+                            self.onSelectionBorderColorChanged(self.selectionManager.getSelectedElements(), color);
+                        }
+                    }
+                );
+
+                this.toolbarItems.cpTextColor = toolbar.addColorPicker({
+                        icon: 'glyphicon glyphicon-font',
+                        title: 'Text color',
+                        colorChangedFn: function (color) {
+                            self.onSelectionTextColorChanged(self.selectionManager.getSelectedElements(), color);
+                        }
+                    }
+                );
+
+                this.toolbarItems.cpFillColor.enabled(false);
+                this.toolbarItems.cpBorderColor.enabled(false);
+                this.toolbarItems.cpTextColor.enabled(false);
             }
 
-            this.toolbarItems.printDiagram = toolbar.addButton({
-                title: 'Print',
-                icon: 'fa fa-print',
-                clickFn: function () {
-                    self.prepAndPrintCanvas();
+            if (!this._hideAllEditToolbarBtns) {
+                if (this._defaultSearchUI === true) {
+                    this.toolbarItems.filterBox = toolbar.addTextBox(
+                        {
+                            prependContent: '<i class="glyphicon glyphicon-search"></i>&nbsp;',
+                            placeholder: 'Find...',
+                            textChangedFn: function (oldVal, newVal) {
+                                self.searchManager.filterItems(newVal);
+                            }
+                        });
                 }
-            });
+
+                this.toolbarItems.printDiagram = toolbar.addButton({
+                    title: 'Print',
+                    icon: 'fa fa-print',
+                    clickFn: function () {
+                        self.prepAndPrintCanvas();
+                    }
+                });
+            }
         }
 
         this._toolbarInitialized = true;

@@ -12,7 +12,7 @@ define([
     'use strict';
 
     var DiagramDesignerWidgetTabs,
-        TABS_CONTAINER = 'diagram-designer-tabs-container',
+        TABS_CONTAINER = 'diagram-designer-tabs-container bip-editors-diagram-designer-tabs-container',
         ADD_TAB_CONTAINER_CLASS = 'add-tab-container',
         TAB_LIST_CONTAINER_CLASS = 'tab-list-container',
         TAB_SCROLL = 200,
@@ -33,7 +33,7 @@ define([
         this.$tabsContainer = $('<div/>', {class: TABS_CONTAINER + ' no-print'});
 
         this.$el.parent().append(this.$tabsContainer);
-        this.$el.parent().addClass(WITH_TABS_CLASS);
+        //this.$el.parent().addClass(WITH_TABS_CLASS);
 
         this._tabCounter = 0;
 

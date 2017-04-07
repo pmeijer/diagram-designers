@@ -1,7 +1,7 @@
 [
   {
-    "id": "ModelEditorDD",
-    "title": "ModelEditorDD",
+    "id": "BIPEditor",
+    "title": "BIP Editor",
     "panel": "panels/ModelEditor/ModelEditorPanel",
     "DEBUG_ONLY": false,
     "default": true
@@ -16,6 +16,12 @@
     "id": "CrosscutDD",
     "title": "CrosscutDD",
     "panel": "panels/Crosscut/CrosscutPanel",
+    "DEBUG_ONLY": false
+  },
+  {
+    "id": "BIPExecutionViz",
+    "title": "BIPExecutionViz",
+    "panel": "panels/BIPExecutionViz/BIPExecutionVizPanel",
     "DEBUG_ONLY": false
   }
 ]
