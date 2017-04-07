@@ -234,7 +234,7 @@ define(['js/logger',
                     if (this.isOfMetaTypeName(nodeObj.getMetaTypeId(), 'TransitionBase')) {
                         objDescriptor.name = [nodeObj.getAttribute('name')];
                         if (nodeObj.getAttribute('guardName')) {
-                            objDescriptor.name.push('"' + nodeObj.getAttribute('guardName') + '"');
+                            objDescriptor.name.push('[' + nodeObj.getAttribute('guardName') + ']');
                         }
                     }
 
