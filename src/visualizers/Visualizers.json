@@ -1,7 +1,7 @@
 [
   {
-    "id": "ModelEditorDD",
-    "title": "ModelEditorDD",
+    "id": "BIPEditor",
+    "title": "BIP Editor",
     "panel": "panels/ModelEditor/ModelEditorPanel",
     "DEBUG_ONLY": false,
     "default": true
