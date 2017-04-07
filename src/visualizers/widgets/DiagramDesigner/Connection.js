@@ -1740,7 +1740,7 @@ define([
         this._hideTexts();
 
         function attachRightClickHider(label) {
-            self.skinParts[label].find('span').mousedown(function(event) {
+            self.skinParts[label].find('.c-name, .c-src, .c-dst').mousedown(function(event) {
                 switch (event.which) {
                     case 3:
                         self.skinParts[label].hide();
