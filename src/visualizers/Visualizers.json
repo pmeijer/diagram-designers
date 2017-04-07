@@ -17,5 +17,11 @@
     "title": "CrosscutDD",
     "panel": "panels/Crosscut/CrosscutPanel",
     "DEBUG_ONLY": false
+  },
+  {
+    "id": "BIPExecutionViz",
+    "title": "BIPExecutionViz",
+    "panel": "panels/BIPExecutionViz/BIPExecutionVizPanel",
+    "DEBUG_ONLY": false
   }
 ]

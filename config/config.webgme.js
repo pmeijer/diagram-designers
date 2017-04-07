@@ -24,6 +24,6 @@ config.requirejsPaths = {
 };
 
 
-config.mongo.uri = 'mongodb://127.0.0.1:27017/diagram_designers';
+config.mongo.uri = 'mongodb://127.0.0.1:27017/webgme_bip_editors';
 validateConfig(config);
 module.exports = config;

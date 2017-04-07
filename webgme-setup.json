@@ -21,6 +21,13 @@
         "panel": "src/visualizers/panels/Crosscut",
         "secondary": false,
         "widget": "src/visualizers/widgets/Crosscut"
+      },
+      "BIPExecutionViz": {
+        "src": "panels/BIPExecutionViz/BIPExecutionVizPanel",
+        "title": "BIPExecutionViz",
+        "panel": "src/visualizers/panels/BIPExecutionViz",
+        "secondary": false,
+        "widget": "src/visualizers/widgets/BIPExecutionViz"
       }
     }
   },
