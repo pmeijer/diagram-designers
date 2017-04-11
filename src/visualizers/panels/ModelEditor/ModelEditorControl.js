@@ -572,7 +572,7 @@ define(['js/logger',
             if (!handledEvents[eid]) {
                 self._onUpdate(eid, extraConnEndsUpdates[eid]);
             }
-        })
+        });
 
         //connections
         events = orderedConnectionEvents;

@@ -35,7 +35,8 @@ define([
     _.extend(ModelEditorWidget.prototype, DiagramDesignerWidget.prototype);
 
     ModelEditorWidget.prototype._afterManagersInitialized = function () {
-        //turn on open btn
+        //turn off item rotation
+        this.enableRotate(false);
         this.enableOpenButton(true);
     };
 
