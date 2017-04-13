@@ -22,6 +22,7 @@ define([
 
         this._blobClient = new BlobClient({logger: this.logger.fork('BlobClient')});
         this._resultData = null;
+        this._instances = {};
         this._configured = false;
         this._chance = new Chance('BIPExecutionVizControl');
 
@@ -39,25 +40,27 @@ define([
         alert('Double-click the component-type to visualize');
     };
 
-    BIPExecutionVizControl.prototype._startSimulation = function () {
+    BIPExecutionVizControl.prototype._initializeSimulation = function () {
         var self = this,
-            initialStateItem,
+            initialStateDecorator,
+            initialColors = [],
             cardinality,
             iconEl;
 
         this._configured = true;
         this.configureSimulationBtn.enabled(false);
+        this._instances = {};
 
         try {
             // 1. First we initialize the filter and assign a color for each instance.
             cardinality = this._resultData.info.componentTypes[this.currentNodeInfo.id].cardinality;
-            this._resultData.info.componentTypes[this.currentNodeInfo.id].instances = {};
             this.designerCanvas.$filterPanel.show();
             this.designerCanvas.$filterUl.empty();
 
             while (cardinality--) {
-                this._resultData.info.componentTypes[this.currentNodeInfo.id].instances[cardinality] = {
-                    color: this._chance.color({format: 'rgb'})
+                this._instances[cardinality] = {
+                    color: this._chance.color({format: 'rgb'}),
+                    active: true
                 };
 
                 iconEl = $('<i/>', {
@@ -65,12 +68,14 @@ define([
                 });
 
                 iconEl.css({
-                    color: this._resultData.info.componentTypes[this.currentNodeInfo.id].instances[cardinality].color
+                    color: this._instances[cardinality].color
                 });
 
                 this.designerCanvas.addFilterItem('Instance ' + cardinality + ' ', cardinality, iconEl);
 
                 iconEl = undefined;
+
+                initialColors.push(this._instances[cardinality].color);
             }
 
         } catch (err) {
@@ -84,12 +89,16 @@ define([
         }
 
         // 2. We try to obtain the initial state and assign a color highlight for each instance.
-        initialStateItem = this._getInitialStateItem();
+        initialStateDecorator = this._getInitialStateDecorator();
 
-        console.log(initialStateItem.$el);
+        if (typeof initialStateDecorator.setHighlightColors === 'function') {
+            initialStateDecorator.setHighlightColors(initialColors);
+        }
+
+
     };
 
-    BIPExecutionVizControl.prototype._getInitialStateItem = function () {
+    BIPExecutionVizControl.prototype._getInitialStateDecorator = function () {
         var result = null,
             componentId,
             node,
@@ -110,10 +119,50 @@ define([
                     this._GMEID2ComponentID[this._GMEModels[i]][0] : null;
 
                 if (componentId && this.designerCanvas.items[componentId]) {
-                    result = this.designerCanvas.items[componentId];
+                    result = this.designerCanvas.items[componentId]._decoratorInstance;
                     break;
                 }
             }
+        }
+
+        return result;
+    };
+
+    BIPExecutionVizControl.prototype._getStateDecorator = function (gmeId) {
+        var result,
+            componentId;
+
+
+        // this._GMEID2ComponentID - GME id to component (visual object) id in an array of length 1.
+        // this._ComponentID2GMEID - component (visual object) id to GME id
+        // this._GMEModels - GME ids of models (whose components are rendered as boxes)
+        // this._GMEConnections -  and connection (whose component are rendered as edges)
+
+        // The components (visual objects) are available under this.designerCanvas.items[<componentId>]
+        componentId = this._GMEID2ComponentID[gmeId] ? this._GMEID2ComponentID[gmeId][0] : null;
+
+        if (componentId && this.designerCanvas.items[componentId]) {
+            result = this.designerCanvas.items[componentId]._decoratorInstance;
+        }
+
+        return result;
+    };
+
+    BIPExecutionVizControl.prototype._getConnection = function (gmeId) {
+        var result,
+            componentId;
+
+
+        // this._GMEID2ComponentID - GME id to component (visual object) id in an array of length 1.
+        // this._ComponentID2GMEID - component (visual object) id to GME id
+        // this._GMEModels - GME ids of models (whose components are rendered as boxes)
+        // this._GMEConnections -  and connection (whose component are rendered as edges)
+
+        // The components (visual objects) are available under this.designerCanvas.items[<componentId>]
+        componentId = this._GMEID2ComponentID[gmeId] ? this._GMEID2ComponentID[gmeId][0] : null;
+
+        if (componentId && this.designerCanvas.items[componentId]) {
+            result = this.designerCanvas.items[componentId]._decoratorInstance;
         }
 
         return result;
@@ -193,7 +242,7 @@ define([
                 title: 'Start simulation',
                 icon: 'fa fa-film',
                 clickFn: function (/*data*/) {
-                    self._startSimulation();
+                    self._initializeSimulation();
                 }
             });
 
