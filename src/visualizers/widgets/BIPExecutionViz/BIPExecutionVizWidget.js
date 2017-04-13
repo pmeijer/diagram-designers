@@ -56,10 +56,12 @@ define([
             class: 'filterPanel no-print'
         });
 
-        this.$filterPanel.html('<div class="header">Component Instances</div><ul class="body"></ul>');
+        this.$filterPanel.html('<div class="header">Component Instances</div><ul class="filter-list"></ul>');
 
         this.$filterHeader = this.$filterPanel.find('.header');
-        this.$filterUl = this.$filterPanel.find('ul.body');
+        this.$filterUl = this.$filterPanel.find('ul.filter-list');
+        this.$filterUl.css('list-style-type', 'none');
+        this.$filterUl.css('padding', '5px 5px 5px 5px');
 
         this.$el.parent().append(this.$filterPanel);
 

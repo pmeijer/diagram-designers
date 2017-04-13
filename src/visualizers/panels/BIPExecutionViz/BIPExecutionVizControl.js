@@ -7,12 +7,14 @@
 define([
     './../ModelEditor/ModelEditorControl',
     'blob/BlobClient',
-    'chance'
-], function (ModelEditorControl, BlobClient, Chance) {
+    'chance',
+    'text!./SwitchableRoutesEngineOutput.json'
+], function (ModelEditorControl, BlobClient, Chance, TEST_DATA) {
 
     'use strict';
 
-    var RESULT_ATTR = 'engineOutput';
+    var RESULT_ATTR = 'engineOutput',
+        TEST = true;
 
     function BIPExecutionVizControl(options) {
 
@@ -22,6 +24,11 @@ define([
         this._resultData = null;
         this._configured = false;
         this._chance = new Chance('BIPExecutionVizControl');
+
+        if (TEST === true) {
+            this._resultData = JSON.parse(TEST_DATA);
+            this._configured = true;
+        }
     }
 
     _.extend(BIPExecutionVizControl.prototype, ModelEditorControl.prototype);
@@ -33,14 +40,16 @@ define([
     };
 
     BIPExecutionVizControl.prototype._startSimulation = function () {
-        var cardinality,
+        var self = this,
+            initialStateItem,
+            cardinality,
             iconEl;
 
         this._configured = true;
         this.configureSimulationBtn.enabled(false);
 
         try {
-
+            // 1. First we initialize the filter and assign a color for each instance.
             cardinality = this._resultData.info.componentTypes[this.currentNodeInfo.id].cardinality;
             this._resultData.info.componentTypes[this.currentNodeInfo.id].instances = {};
             this.designerCanvas.$filterPanel.show();
@@ -48,18 +57,18 @@ define([
 
             while (cardinality--) {
                 this._resultData.info.componentTypes[this.currentNodeInfo.id].instances[cardinality] = {
-                    color: this._chance.color({format: 'hex'})
+                    color: this._chance.color({format: 'rgb'})
                 };
 
                 iconEl = $('<i/>', {
-                    class: 'instance-filter-item'
+                    class: 'fa fa-circle instance-filter-item-icon'
                 });
 
                 iconEl.css({
-                    color: this._resultData.info.componentTypes[this.currentNodeInfo.id].instances[cardinality]
+                    color: this._resultData.info.componentTypes[this.currentNodeInfo.id].instances[cardinality].color
                 });
 
-                this.designerCanvas.addFilterItem('Instance ' + cardinality, cardinality, iconEl);
+                this.designerCanvas.addFilterItem('Instance ' + cardinality + ' ', cardinality, iconEl);
 
                 iconEl = undefined;
             }
@@ -69,8 +78,45 @@ define([
                 message: 'Engine output is outdated or wrong format.',
                 severity: 'error'
             });
+
             this.logger.error(err);
+            return;
         }
+
+        // 2. We try to obtain the initial state and assign a color highlight for each instance.
+        initialStateItem = this._getInitialStateItem();
+
+        console.log(initialStateItem.$el);
+    };
+
+    BIPExecutionVizControl.prototype._getInitialStateItem = function () {
+        var result = null,
+            componentId,
+            node,
+            i;
+
+        // this._GMEID2ComponentID - GME id to component (visual object) id in an array of length 1.
+        // this._ComponentID2GMEID - component (visual object) id to GME id
+        // this._GMEModels - GME ids of models (whose components are rendered as boxes)
+        // this._GMEConnections -  and connection (whose component are rendered as edges)
+
+        // The components (visual objects) are available under this.designerCanvas.items[<componentId>]
+
+
+        for (i = 0; i < this._GMEModels.length; i += 1) {
+            node = this._client.getNode(this._GMEModels[i]);
+            if (node && this.isOfMetaTypeName(node.getMetaTypeId(), 'InitialState')) {
+                componentId = this._GMEID2ComponentID[this._GMEModels[i]] ?
+                    this._GMEID2ComponentID[this._GMEModels[i]][0] : null;
+
+                if (componentId && this.designerCanvas.items[componentId]) {
+                    result = this.designerCanvas.items[componentId];
+                    break;
+                }
+            }
+        }
+
+        return result;
     };
 
     // Methods overridden from ModelEditor
