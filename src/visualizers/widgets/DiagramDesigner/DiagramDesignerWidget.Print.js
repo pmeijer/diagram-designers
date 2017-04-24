@@ -25,7 +25,7 @@ define([
             [
                 'background-color',
                 'color',
-                'border-color',
+                //'border-color',
                 'border-top-color',
                 'border-right-color',
                 'border-bottom-color',
