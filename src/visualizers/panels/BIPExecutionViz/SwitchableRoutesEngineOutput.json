@@ -3,7 +3,7 @@
     "componentTypes": {
       "/f/t/1": {
         "name": "Route",
-        "cardinality": 2
+        "cardinality": 3
       },
       "/f/t/y": {
         "name": "Monitor",

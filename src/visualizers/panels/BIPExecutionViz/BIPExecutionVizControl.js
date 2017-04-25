@@ -8,12 +8,14 @@ define([
     './../ModelEditor/ModelEditorControl',
     'blob/BlobClient',
     'chance',
+    'q',
     'text!./SwitchableRoutesEngineOutput.json'
-], function (ModelEditorControl, BlobClient, Chance, TEST_DATA) {
+], function (ModelEditorControl, BlobClient, Chance, Q, TEST_DATA) {
 
     'use strict';
 
     var RESULT_ATTR = 'engineOutput',
+        STEP_DELAY = 1000,
         TEST = true;
 
     function BIPExecutionVizControl(options) {
@@ -30,6 +32,9 @@ define([
             this._resultData = JSON.parse(TEST_DATA);
             this._configured = true;
         }
+
+        this._step = -1;
+        this._internalStep = 0;
     }
 
     _.extend(BIPExecutionVizControl.prototype, ModelEditorControl.prototype);
@@ -43,12 +48,12 @@ define([
     BIPExecutionVizControl.prototype._initializeSimulation = function () {
         var self = this,
             initialStateDecorator,
+            initialStateId,
             initialColors = [],
             cardinality,
             iconEl;
 
-        this._configured = true;
-        this.configureSimulationBtn.enabled(false);
+        //this.configureSimulationBtn.enabled(true);
         this._instances = {};
 
         try {
@@ -56,11 +61,14 @@ define([
             cardinality = this._resultData.info.componentTypes[this.currentNodeInfo.id].cardinality;
             this.designerCanvas.$filterPanel.show();
             this.designerCanvas.$filterUl.empty();
+            initialStateId = this._getInitialStateId();
 
             while (cardinality--) {
                 this._instances[cardinality] = {
                     color: this._chance.color({format: 'rgb'}),
-                    active: true
+                    active: true,
+                    stateId: initialStateId,
+                    transitionId: null
                 };
 
                 iconEl = $('<i/>', {
@@ -89,19 +97,75 @@ define([
         }
 
         // 2. We try to obtain the initial state and assign a color highlight for each instance.
-        initialStateDecorator = this._getInitialStateDecorator();
+        initialStateDecorator = this._getStateDecorator(initialStateId);
 
         if (typeof initialStateDecorator.setHighlightColors === 'function') {
             initialStateDecorator.setHighlightColors(initialColors);
         }
 
-
+        this._step = 0;
     };
 
-    BIPExecutionVizControl.prototype._getInitialStateDecorator = function () {
-        var result = null,
-            componentId,
-            node,
+    BIPExecutionVizControl.prototype._stepSimulation = function (stepData, internalStep) {
+        var deferred = Q.defer(),
+            self = this,
+            hasMoreSteps = false,
+            cnt = 0,
+            transitions;
+
+        function doTransition(instanceId, src, transition, dst) {
+            var srcDecorator = self._getStateDecorator(src),
+                dstDecorator = self._getStateDecorator(dst),
+                conn = self._getConnection(transition),
+                index;
+
+            index = srcDecorator.highlightColors.indexOf(self._instances[instanceId].color);
+            srcDecorator.highlightColors.splice(index, 1);
+            srcDecorator.updateSvg();
+
+            conn._highlightPath();
+
+            cnt += 1;
+
+            setTimeout(function () {
+                cnt -= 1;
+
+                conn._unHighlightPath();
+                dstDecorator.highlightColors.push(self._instances[instanceId].color);
+                dstDecorator.updateSvg();
+
+                if (cnt === 0) {
+                    deferred.resolve(hasMoreSteps);
+                }
+            }, STEP_DELAY);
+        }
+
+        if (stepData[this.currentNodeInfo.id]) {
+            transitions = stepData[self.currentNodeInfo.id].transitions;
+            Object.keys(transitions).forEach(function (instanceId) {
+                if (self._instances[instanceId] &&
+                    self._instances[instanceId].active === true &&
+                    transitions[instanceId].length > internalStep) {
+
+                    hasMoreSteps = hasMoreSteps || transitions[instanceId].length > (internalStep + 1);
+
+                    doTransition(instanceId,
+                        transitions[instanceId][internalStep].srcState.id,
+                        transitions[instanceId][internalStep].transition.id,
+                        transitions[instanceId][internalStep].dstState.id);
+                }
+            });
+        }
+
+        if (cnt === 0) {
+            deferred.resolve(hasMoreSteps);
+        }
+
+        return deferred.promise;
+    };
+
+    BIPExecutionVizControl.prototype._getInitialStateId = function () {
+        var node,
             i;
 
         // this._GMEID2ComponentID - GME id to component (visual object) id in an array of length 1.
@@ -115,17 +179,9 @@ define([
         for (i = 0; i < this._GMEModels.length; i += 1) {
             node = this._client.getNode(this._GMEModels[i]);
             if (node && this.isOfMetaTypeName(node.getMetaTypeId(), 'InitialState')) {
-                componentId = this._GMEID2ComponentID[this._GMEModels[i]] ?
-                    this._GMEID2ComponentID[this._GMEModels[i]][0] : null;
-
-                if (componentId && this.designerCanvas.items[componentId]) {
-                    result = this.designerCanvas.items[componentId]._decoratorInstance;
-                    break;
-                }
+                return this._GMEModels[i];
             }
         }
-
-        return result;
     };
 
     BIPExecutionVizControl.prototype._getStateDecorator = function (gmeId) {
@@ -162,7 +218,7 @@ define([
         componentId = this._GMEID2ComponentID[gmeId] ? this._GMEID2ComponentID[gmeId][0] : null;
 
         if (componentId && this.designerCanvas.items[componentId]) {
-            result = this.designerCanvas.items[componentId]._decoratorInstance;
+            result = this.designerCanvas.items[componentId];
         }
 
         return result;
@@ -242,7 +298,30 @@ define([
                 title: 'Start simulation',
                 icon: 'fa fa-film',
                 clickFn: function (/*data*/) {
-                    self._initializeSimulation();
+                    if (self._step < 0) {
+                        self._initializeSimulation();
+                    } else {
+                        self.startSimulationBtn.enabled(false);
+                        Q.all([self._stepSimulation(self._resultData.output[self._step], self._internalStep)])
+                            .then(function (res) {
+                                self.startSimulationBtn.enabled(true);
+                                if (res.indexOf(true) > -1) {
+                                    self._internalStep += 1;
+                                } else {
+                                    self._internalStep = 0;
+                                    self._step += 1;
+                                }
+
+                                if (self._step >= self._resultData.output.length) {
+                                    alert('Simulation ended');
+                                    self._step = 0;
+                                    self._internalStep = 0;
+                                }
+                            })
+                            .catch(function (err) {
+                                self.logger.error('Simulation step failed!', err);
+                            });
+                    }
                 }
             });
 
