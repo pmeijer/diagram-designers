@@ -117,20 +117,19 @@ define([
             var srcDecorator = self._getStateDecorator(src),
                 dstDecorator = self._getStateDecorator(dst),
                 conn = self._getConnection(transition),
-                index;
+                color = self._instances[instanceId].color;
 
-            index = srcDecorator.highlightColors.indexOf(self._instances[instanceId].color);
-            srcDecorator.highlightColors.splice(index, 1);
-            srcDecorator.updateSvg();
-
-            conn._highlightPath();
+            conn._highlightPath(color, STEP_DELAY / 2);
 
             cnt += 1;
 
             setTimeout(function () {
                 cnt -= 1;
 
-                conn._unHighlightPath();
+                srcDecorator.highlightColors.splice(srcDecorator.highlightColors.indexOf(color), 1);
+                srcDecorator.updateSvg();
+
+                conn._unHighlightPath(color);
                 dstDecorator.highlightColors.push(self._instances[instanceId].color);
                 dstDecorator.updateSvg();
 
