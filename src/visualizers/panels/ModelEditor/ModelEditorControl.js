@@ -546,7 +546,7 @@ define(['js/logger',
             if (!handledEvents[eid]) {
                 self._onUpdate(eid, extraComponentTypeUpdates[eid]);
             }
-        })
+        });
 
         this._handleDecoratorNotification();
 

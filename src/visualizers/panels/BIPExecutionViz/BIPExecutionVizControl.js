@@ -23,10 +23,13 @@ define([
         ModelEditorControl.call(this, options);
 
         this._blobClient = new BlobClient({logger: this.logger.fork('BlobClient')});
+
         this._resultData = null;
         this._instances = {};
         this._configured = false;
+
         this._chance = new Chance('BIPExecutionVizControl');
+        this._stepDelay = STEP_DELAY;
 
         if (TEST === true) {
             this._resultData = JSON.parse(TEST_DATA);
@@ -35,6 +38,10 @@ define([
 
         this._step = -1;
         this._internalStep = 0;
+        this._inStep = false;
+        this._pendingActivate = {};
+
+        this.designerCanvas.onCheckChanged = this._onFilterCheckChange.bind(this);
     }
 
     _.extend(BIPExecutionVizControl.prototype, ModelEditorControl.prototype);
@@ -50,6 +57,7 @@ define([
             initialStateDecorator,
             initialStateId,
             initialColors = [],
+            i,
             cardinality,
             iconEl;
 
@@ -63,8 +71,8 @@ define([
             this.designerCanvas.$filterUl.empty();
             initialStateId = this._getInitialStateId();
 
-            while (cardinality--) {
-                this._instances[cardinality] = {
+            for (i = 1; i <= cardinality; i += 1) {
+                this._instances[i] = {
                     color: this._chance.color({format: 'rgb'}),
                     active: true,
                     stateId: initialStateId,
@@ -76,14 +84,14 @@ define([
                 });
 
                 iconEl.css({
-                    color: this._instances[cardinality].color
+                    color: this._instances[i].color
                 });
 
-                this.designerCanvas.addFilterItem('Instance ' + cardinality + ' ', cardinality, iconEl);
+                this.designerCanvas.addFilterItem(i.toString(), i, iconEl);
 
                 iconEl = undefined;
 
-                initialColors.push(this._instances[cardinality].color);
+                initialColors.push(this._instances[i].color);
             }
 
         } catch (err) {
@@ -120,15 +128,17 @@ define([
             conns = {},
             transitions;
 
+        this._inStep = true;
+
         function doTransition(instanceId, src, transition, dst) {
             var srcDecorator = self._getStateDecorator(src),
                 dstDecorator = self._getStateDecorator(dst),
                 conn = self._getConnection(transition),
                 color = self._instances[instanceId].color;
 
-            conn._highlightPath(color, STEP_DELAY / 2);
+            conn._highlightPath(color, self._stepDelay / 2);
             srcDecorator.colorToPathEl[color]
-                .animate({opacity: 0}, STEP_DELAY / 2);
+                .animate({opacity: 0}, self._stepDelay / 2);
 
             if (sources[src]) {
                 sources[src].colors.push(color);
@@ -164,7 +174,7 @@ define([
 
                 if (cnt === 0) {
                     Object.keys(conns).forEach(function (id) {
-                        conns[id].decorator._unHighlightPath(color, STEP_DELAY / 2);
+                        conns[id].decorator._unHighlightPath(color, self._stepDelay / 2);
                     });
 
                     Object.keys(destinations).forEach(function (id) {
@@ -179,7 +189,7 @@ define([
 
                         destinations[id].decorator.setHighlightColors(colors);
                         colors.forEach(function (color) {
-                            var delay = addColors.indexOf(color) > -1 ? (STEP_DELAY / 2) : 0;
+                            var delay = addColors.indexOf(color) > -1 ? (self._stepDelay / 2) : 0;
 
                             destinations[id].decorator.colorToPathEl[color].animate({opacity: 1}, delay);
                         });
@@ -204,30 +214,34 @@ define([
                     });
 
                     setTimeout(function () {
+                        self._updateActivation();
+                        self._inStep = false;
                         deferred.resolve(hasMoreSteps);
-                    }, STEP_DELAY / 2 + 10);
+                    }, self._stepDelay / 2 + 10);
                 }
-            }, STEP_DELAY / 2 + 10);
+            }, self._stepDelay / 2 + 10);
         }
 
         if (stepData[this.currentNodeInfo.id]) {
             transitions = stepData[self.currentNodeInfo.id].transitions;
             Object.keys(transitions).forEach(function (instanceId) {
-                if (self._instances[instanceId] &&
-                    self._instances[instanceId].active === true &&
-                    transitions[instanceId].length > internalStep) {
-
+                if (self._instances[instanceId] && transitions[instanceId].length > internalStep) {
                     hasMoreSteps = hasMoreSteps || transitions[instanceId].length > (internalStep + 1);
 
-                    doTransition(instanceId,
-                        transitions[instanceId][internalStep].srcState.id,
-                        transitions[instanceId][internalStep].transition.id,
-                        transitions[instanceId][internalStep].dstState.id);
+                    if (self._instances[instanceId].active === true) {
+                        doTransition(instanceId,
+                            transitions[instanceId][internalStep].srcState.id,
+                            transitions[instanceId][internalStep].transition.id,
+                            transitions[instanceId][internalStep].dstState.id);
+                    }
+
+                    self._instances[instanceId].stateId = transitions[instanceId][internalStep].dstState.id;
                 }
             });
         }
 
         if (cnt === 0) {
+            this._inStep = false;
             deferred.resolve(hasMoreSteps);
         }
 
@@ -294,6 +308,39 @@ define([
         return result;
     };
 
+    BIPExecutionVizControl.prototype._onFilterCheckChange = function (id, isChecked) {
+        this._pendingActivate[id] = isChecked;
+
+        if (!this._inStep) {
+            this._updateActivation();
+        }
+    };
+
+    BIPExecutionVizControl.prototype._updateActivation = function () {
+        var self = this;
+
+        Object.keys(this._pendingActivate).forEach(function (id) {
+            var decorator,
+                colors;
+            if (self._instances[id].active !== self._pendingActivate[id]) {
+                self._instances[id].active = self._pendingActivate[id];
+
+                decorator = self._getStateDecorator(self._instances[id].stateId);
+                if (self._pendingActivate[id]) {
+                    decorator.setHighlightColors(_.union(decorator.highlightColors, [self._instances[id].color]));
+                } else {
+                    decorator.setHighlightColors(_.difference(decorator.highlightColors, [self._instances[id].color]));
+                }
+
+                Object.keys(decorator.colorToPathEl).forEach(function (color) {
+                    decorator.colorToPathEl[color].css({opacity: 1});
+                });
+            }
+        });
+
+        this._pendingActivate = {};
+    };
+
     // Methods overridden from ModelEditor
     BIPExecutionVizControl.prototype.selectedObjectChanged = function (nodeId) {
         var self = this,
@@ -349,6 +396,11 @@ define([
 
         this._toolbarItems = [];
 
+        if (this._embedded) {
+            this._toolbarInitialized = true;
+            return;
+        }
+
         // Configure btn
         this.configureSimulationBtn = toolBar.addButton(
             {
@@ -398,6 +450,41 @@ define([
         this._toolbarItems.push(this.startSimulationBtn);
         this.startSimulationBtn.enabled(false);
 
+        this.nextFrameBtn = toolBar.addButton(
+            {
+                title: 'Next frame',
+                icon: 'fa fa-film',
+                clickFn: function (/*data*/) {
+                    if (self._step < 0) {
+                        self._initializeSimulation();
+                    } else {
+                        self.startSimulationBtn.enabled(false);
+                        Q.all([self._stepSimulation(self._resultData.output[self._step], self._internalStep)])
+                            .then(function (res) {
+                                self.startSimulationBtn.enabled(true);
+                                if (res.indexOf(true) > -1) {
+                                    self._internalStep += 1;
+                                } else {
+                                    self._internalStep = 0;
+                                    self._step += 1;
+                                }
+
+                                if (self._step >= self._resultData.output.length) {
+                                    alert('Simulation ended');
+                                    self._step = 0;
+                                    self._internalStep = 0;
+                                }
+                            })
+                            .catch(function (err) {
+                                self.logger.error('Simulation step failed!', err);
+                            });
+                    }
+                }
+            });
+
+        this._toolbarItems.push(this.nextFrameBtn);
+        this.startSimulationBtn.enabled(false);
+
         this._toolbarInitialized = true;
     };
 
@@ -426,6 +513,14 @@ define([
                 WebGMEGlobal.State.registerActiveObject(gmeID, {suppressVisualizerFromNode: true});
             }
         }
+    };
+
+    BIPExecutionVizControl.prototype.processNextInQueue = function () {
+        if (this.eventQueue.length === 0) {
+            console.log('Done!');
+        }
+
+        return ModelEditorControl.prototype.processNextInQueue.call(this);
     };
 
     return BIPExecutionVizControl;

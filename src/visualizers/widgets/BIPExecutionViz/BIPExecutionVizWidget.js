@@ -7,7 +7,8 @@
 
 define([
     'widgets/DiagramDesigner/DiagramDesignerWidget',
-    'js/Controls/iCheckBox'
+    'js/Controls/iCheckBox',
+    'css!./styles/BIPExecutionVizWidget.css'
 ], function (DiagramDesignerWidget, ICheckBox) {
     'use strict';
 
@@ -53,13 +54,13 @@ define([
     BIPExecutionVizWidget.prototype._initializeFilterPanel = function () {
         /**** create FILTER PANEL ****/
         this.$filterPanel = $('<div/>', {
-            class: 'filterPanel no-print'
+            class: 'filterPanel no-print bip-execution-viz-filter-panel'
         });
 
-        this.$filterPanel.html('<div class="header">Component Instances</div><ul class="filter-list"></ul>');
+        this.$filterPanel.html('<div class="header">Component Instances</div><ul class="body"></ul>');
 
         this.$filterHeader = this.$filterPanel.find('.header');
-        this.$filterUl = this.$filterPanel.find('ul.filter-list');
+        this.$filterUl = this.$filterPanel.find('ul.body');
         this.$filterUl.css('list-style-type', 'none');
         this.$filterUl.css('padding', '5px 5px 5px 5px');
 
