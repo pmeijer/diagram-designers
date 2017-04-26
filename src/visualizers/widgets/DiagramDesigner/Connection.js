@@ -901,7 +901,7 @@ define([
 
         delay = delay || 0;
 
-        if (this.highlightColors.length < 2) {
+        if (true) {
             this.skinParts.pathShadow.animate({
                 opacity: this.designerAttributes.shadowOpacityWhenSelected,
                 'stroke-width': this.designerAttributes.shadowSelectedWidth,
@@ -920,49 +920,49 @@ define([
                 }, delay);
             }
         } else {
-            this.skinParts.path.animate({stroke: color}, delay);
-
-            if (this.skinParts.arrowStart) {
-                this.skinParts.arrowStart.animate({stroke: color}, delay);
-            }
-
-            if (this.skinParts.arrowEnd) {
-                this.skinParts.arrowEnd.animate({stroke: color}, delay);
-            }
+            // this.skinParts.path.animate({stroke: color}, delay);
+            //
+            // if (this.skinParts.arrowStart) {
+            //     this.skinParts.arrowStart.animate({stroke: color}, delay);
+            // }
+            //
+            // if (this.skinParts.arrowEnd) {
+            //     this.skinParts.arrowEnd.animate({stroke: color}, delay);
+            // }
         }
     };
 
-    Connection.prototype._unHighlightPath = function (color) {
-        var index;
+    Connection.prototype._unHighlightPath = function (color, delay) {
+        var self = this;
 
-        if (color) {
-            index = this.highlightColors.indexOf(color);
-            this.highlightColors.splice(index, 1);
-        }
+        this.highlightColors = [];
 
         if (this.designerAttributes.width < MIN_WIDTH_NOT_TO_NEED_SHADOW) {
 
-            this.skinParts.pathShadow.attr({
-                opacity: this.designerAttributes.shadowOpacity,
-                'stroke-width': this.designerAttributes.shadowWidth
+            this.skinParts.pathShadow.animate({
+                opacity: this.designerAttributes.shadowOpacity
+            }, delay || 0, function () {
+                self.skinParts.pathShadow.attr({'stroke-width': self.designerAttributes.shadowWidth});
             });
 
             if (this.skinParts.pathShadowArrowStart) {
-                this.skinParts.pathShadowArrowStart.attr({opacity: this.designerAttributes.shadowOpacity});
+                this.skinParts.pathShadowArrowStart.animate({opacity: this.designerAttributes.shadowOpacity},
+                    delay || 0);
             }
             if (this.skinParts.pathShadowArrowEnd) {
-                this.skinParts.pathShadowArrowEnd.attr({opacity: this.designerAttributes.shadowOpacity});
+                this.skinParts.pathShadowArrowEnd.animate({opacity: this.designerAttributes.shadowOpacity},
+                    delay || 0);
             }
 
-            this.skinParts.path.attr({stroke: this.designerAttributes.color});
-
-            if (this.skinParts.arrowStart) {
-                this.skinParts.arrowStart.attr({stroke: this.designerAttributes.color});
-            }
-
-            if (this.skinParts.arrowEnd) {
-                this.skinParts.arrowEnd.attr({stroke: this.designerAttributes.color});
-            }
+            // this.skinParts.path.attr({stroke: this.designerAttributes.color});
+            //
+            // if (this.skinParts.arrowStart) {
+            //     this.skinParts.arrowStart.attr({stroke: this.designerAttributes.color});
+            // }
+            //
+            // if (this.skinParts.arrowEnd) {
+            //     this.skinParts.arrowEnd.attr({stroke: this.designerAttributes.color});
+            // }
 
         } else {
             this._removePathShadow();

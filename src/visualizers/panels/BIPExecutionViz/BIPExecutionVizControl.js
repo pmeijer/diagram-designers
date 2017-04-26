@@ -15,7 +15,7 @@ define([
     'use strict';
 
     var RESULT_ATTR = 'engineOutput',
-        STEP_DELAY = 1000,
+        STEP_DELAY = 2000,
         TEST = true;
 
     function BIPExecutionVizControl(options) {
@@ -101,6 +101,10 @@ define([
 
         if (typeof initialStateDecorator.setHighlightColors === 'function') {
             initialStateDecorator.setHighlightColors(initialColors);
+            initialColors.forEach(function (color) {
+                initialStateDecorator.colorToPathEl[color]
+                    .animate({opacity: 1}, STEP_DELAY);
+            })
         }
 
         this._step = 0;
@@ -111,6 +115,9 @@ define([
             self = this,
             hasMoreSteps = false,
             cnt = 0,
+            sources = {},
+            destinations = {},
+            conns = {},
             transitions;
 
         function doTransition(instanceId, src, transition, dst) {
@@ -120,23 +127,87 @@ define([
                 color = self._instances[instanceId].color;
 
             conn._highlightPath(color, STEP_DELAY / 2);
+            srcDecorator.colorToPathEl[color]
+                .animate({opacity: 0}, STEP_DELAY / 2);
+
+            if (sources[src]) {
+                sources[src].colors.push(color);
+            } else {
+                sources[src] = {
+                    decorator: srcDecorator,
+                    colors: [color]
+                }
+            }
+
+            if (destinations[dst]) {
+                destinations[dst].colors.push(color);
+            } else {
+                destinations[dst] = {
+                    decorator: dstDecorator,
+                    colors: [color]
+                }
+            }
+
+            if (conns[dst]) {
+                conns[dst].colors.push(color);
+            } else {
+                conns[dst] = {
+                    decorator: conn,
+                    colors: [color]
+                }
+            }
 
             cnt += 1;
 
             setTimeout(function () {
                 cnt -= 1;
 
-                srcDecorator.highlightColors.splice(srcDecorator.highlightColors.indexOf(color), 1);
-                srcDecorator.updateSvg();
-
-                conn._unHighlightPath(color);
-                dstDecorator.highlightColors.push(self._instances[instanceId].color);
-                dstDecorator.updateSvg();
-
                 if (cnt === 0) {
-                    deferred.resolve(hasMoreSteps);
+                    Object.keys(conns).forEach(function (id) {
+                        conns[id].decorator._unHighlightPath(color, STEP_DELAY / 2);
+                    });
+
+                    Object.keys(destinations).forEach(function (id) {
+                        var originalColors = destinations[id].decorator.highlightColors,
+                            addColors = destinations[id].colors,
+                            removeColors = sources[id] ? sources[id].colors : [],
+                            colors;
+
+                        colors = _.union(originalColors, addColors);
+                        colors = _.difference(colors, removeColors);
+                        colors = _.union(colors, _.intersection(addColors, removeColors));
+
+                        destinations[id].decorator.setHighlightColors(colors);
+                        colors.forEach(function (color) {
+                            var delay = addColors.indexOf(color) > -1 ? (STEP_DELAY / 2) : 0;
+
+                            destinations[id].decorator.colorToPathEl[color].animate({opacity: 1}, delay);
+                        });
+                    });
+
+                    Object.keys(sources).forEach(function (id) {
+                        var originalColors = sources[id].decorator.highlightColors,
+                            removeColors = sources[id].colors,
+                            colors;
+
+                        if (destinations[id]) {
+                            // Handled above.
+                            return;
+                        }
+
+                        colors = _.difference(originalColors, removeColors);
+                        sources[id].decorator.setHighlightColors(colors);
+
+                        colors.forEach(function (color) {
+                            sources[id].decorator.colorToPathEl[color].css({opacity: 1});
+                        });
+                    });
+
+                    setTimeout(function () {
+                        deferred.resolve(hasMoreSteps);
+                    }, STEP_DELAY / 2 + 10);
                 }
-            }, STEP_DELAY);
+            }, STEP_DELAY / 2 + 10);
         }
 
         if (stepData[this.currentNodeInfo.id]) {
