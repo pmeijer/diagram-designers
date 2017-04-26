@@ -103,7 +103,7 @@ define([
             initialStateDecorator.setHighlightColors(initialColors);
             initialColors.forEach(function (color) {
                 initialStateDecorator.colorToPathEl[color]
-                    .animate({opacity: 1}, STEP_DELAY);
+                    .animate({opacity: 1}, 100);
             })
         }
 
