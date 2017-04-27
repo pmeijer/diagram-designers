@@ -6,53 +6,33 @@
 
 define([
     './../ModelEditor/ModelEditorControl',
-    'blob/BlobClient',
     'chance',
-    'q',
-    'text!./SwitchableRoutesEngineOutput.json'
-], function (ModelEditorControl, BlobClient, Chance, Q, TEST_DATA) {
+    'q'
+], function (ModelEditorControl, Chance, Q) {
 
     'use strict';
 
-    var RESULT_ATTR = 'engineOutput',
-        STEP_DELAY = 2000,
-        TEST = true;
+    var STEP_DELAY = 500;
 
-    function BIPExecutionVizControl(options) {
+    function BIPExecutionVizControl(options, parentPanelControl) {
 
         ModelEditorControl.call(this, options);
 
-        this._blobClient = new BlobClient({logger: this.logger.fork('BlobClient')});
-
-        this._resultData = null;
         this._instances = {};
-        this._configured = false;
-
         this._chance = new Chance('BIPExecutionVizControl');
         this._stepDelay = STEP_DELAY;
 
-        if (TEST === true) {
-            this._resultData = JSON.parse(TEST_DATA);
-            this._configured = true;
-        }
-
-        this._step = -1;
-        this._internalStep = 0;
         this._inStep = false;
         this._pendingActivate = {};
+
+        this._parentPanelControl = parentPanelControl;
 
         this.designerCanvas.onCheckChanged = this._onFilterCheckChange.bind(this);
     }
 
     _.extend(BIPExecutionVizControl.prototype, ModelEditorControl.prototype);
 
-    BIPExecutionVizControl.prototype._configureSimulation = function () {
-        this._configured = true;
-        this.configureSimulationBtn.enabled(false);
-        alert('Double-click the component-type to visualize');
-    };
-
-    BIPExecutionVizControl.prototype._initializeSimulation = function () {
+    BIPExecutionVizControl.prototype.initializeSimulation = function (resultData) {
         var self = this,
             initialStateDecorator,
             initialStateId,
@@ -66,7 +46,7 @@ define([
 
         try {
             // 1. First we initialize the filter and assign a color for each instance.
-            cardinality = this._resultData.info.componentTypes[this.currentNodeInfo.id].cardinality;
+            cardinality = resultData.info.componentTypes[this.currentNodeInfo.id].cardinality;
             this.designerCanvas.$filterPanel.show();
             this.designerCanvas.$filterUl.empty();
             initialStateId = this._getInitialStateId();
@@ -115,10 +95,9 @@ define([
             })
         }
 
-        this._step = 0;
     };
 
-    BIPExecutionVizControl.prototype._stepSimulation = function (stepData, internalStep) {
+    BIPExecutionVizControl.prototype.stepSimulation = function (stepData, internalStep) {
         var deferred = Q.defer(),
             self = this,
             hasMoreSteps = false,
@@ -346,146 +325,8 @@ define([
         var self = this,
             node,
             blobHash;
+
         ModelEditorControl.prototype.selectedObjectChanged.call(this, nodeId);
-
-        node = this._client.getNode(nodeId);
-
-        if (this._configured) {
-            if (node && this.isOfMetaTypeName(node.getMetaTypeId(), 'ComponentType')) {
-                this.startSimulationBtn.enabled(true);
-                alert('Start the simulation using the toolbar.');
-            }
-            return;
-        }
-
-
-        this._resultData = null;
-        this.designerCanvas.showProgressbar();
-        this.configureSimulationBtn.enabled(false);
-
-        blobHash = node ? node.getAttribute(RESULT_ATTR) : null;
-
-        if (blobHash) {
-            this._blobClient.getObjectAsJSON(blobHash)
-                .then(function (resultData) {
-                    self._resultData = resultData;
-                    self._client.notifyUser({
-                        message: 'Current Project has attached results! To start result simulation use tool-bar.',
-                        severity: 'success'
-                    });
-                    self.designerCanvas.hideProgressbar();
-                    self.configureSimulationBtn.enabled(true);
-                })
-                .catch(function (err) {
-                    self._client.notifyUser({
-                        message: 'Failed obtaining engineOutput from Project.',
-                        severity: 'error'
-                    });
-                    self.logger(err);
-                    self.designerCanvas.hideProgressbar();
-                });
-
-        } else {
-            this.designerCanvas.hideProgressbar();
-        }
-    };
-
-    BIPExecutionVizControl.prototype._initializeToolbar = function () {
-        var toolBar = WebGMEGlobal.Toolbar,
-            self = this;
-
-        this._toolbarItems = [];
-
-        if (this._embedded) {
-            this._toolbarInitialized = true;
-            return;
-        }
-
-        // Configure btn
-        this.configureSimulationBtn = toolBar.addButton(
-            {
-                title: 'Configure simulation',
-                icon: 'fa fa-cogs',
-                clickFn: function (/*data*/) {
-                    self._configureSimulation();
-                }
-            });
-
-        this._toolbarItems.push(this.configureSimulationBtn);
-        this.configureSimulationBtn.enabled(false);
-
-        // Start btn
-        this.startSimulationBtn = toolBar.addButton(
-            {
-                title: 'Start simulation',
-                icon: 'fa fa-film',
-                clickFn: function (/*data*/) {
-                    if (self._step < 0) {
-                        self._initializeSimulation();
-                    } else {
-                        self.startSimulationBtn.enabled(false);
-                        Q.all([self._stepSimulation(self._resultData.output[self._step], self._internalStep)])
-                            .then(function (res) {
-                                self.startSimulationBtn.enabled(true);
-                                if (res.indexOf(true) > -1) {
-                                    self._internalStep += 1;
-                                } else {
-                                    self._internalStep = 0;
-                                    self._step += 1;
-                                }
-
-                                if (self._step >= self._resultData.output.length) {
-                                    alert('Simulation ended');
-                                    self._step = 0;
-                                    self._internalStep = 0;
-                                }
-                            })
-                            .catch(function (err) {
-                                self.logger.error('Simulation step failed!', err);
-                            });
-                    }
-                }
-            });
-
-        this._toolbarItems.push(this.startSimulationBtn);
-        this.startSimulationBtn.enabled(false);
-
-        this.nextFrameBtn = toolBar.addButton(
-            {
-                title: 'Next frame',
-                icon: 'fa fa-film',
-                clickFn: function (/*data*/) {
-                    if (self._step < 0) {
-                        self._initializeSimulation();
-                    } else {
-                        self.startSimulationBtn.enabled(false);
-                        Q.all([self._stepSimulation(self._resultData.output[self._step], self._internalStep)])
-                            .then(function (res) {
-                                self.startSimulationBtn.enabled(true);
-                                if (res.indexOf(true) > -1) {
-                                    self._internalStep += 1;
-                                } else {
-                                    self._internalStep = 0;
-                                    self._step += 1;
-                                }
-
-                                if (self._step >= self._resultData.output.length) {
-                                    alert('Simulation ended');
-                                    self._step = 0;
-                                    self._internalStep = 0;
-                                }
-                            })
-                            .catch(function (err) {
-                                self.logger.error('Simulation step failed!', err);
-                            });
-                    }
-                }
-            });
-
-        this._toolbarItems.push(this.nextFrameBtn);
-        this.startSimulationBtn.enabled(false);
-
-        this._toolbarInitialized = true;
     };
 
     BIPExecutionVizControl.prototype._onSelectionChanged = function (selectedIds) {
@@ -504,23 +345,40 @@ define([
     };
 
     BIPExecutionVizControl.prototype._onDesignerItemDoubleClick = function (id /*, event */) {
-        var gmeID = this._ComponentID2GMEID[id],
-            node;
-
-        if (gmeID) {
-            node = this._client.getNode(gmeID);
-            if (node && this.isOfMetaTypeName(node.getMetaTypeId(), 'ComponentType') && this._configured) {
-                WebGMEGlobal.State.registerActiveObject(gmeID, {suppressVisualizerFromNode: true});
-            }
-        }
+        // var gmeID = this._ComponentID2GMEID[id],
+        //     node;
+        //
+        // if (gmeID) {
+        //     node = this._client.getNode(gmeID);
+        //     if (node && this.isOfMetaTypeName(node.getMetaTypeId(), 'ComponentType') && this._configured) {
+        //         WebGMEGlobal.State.registerActiveObject(gmeID, {suppressVisualizerFromNode: true});
+        //     }
+        // }
     };
 
     BIPExecutionVizControl.prototype.processNextInQueue = function () {
         if (this.eventQueue.length === 0) {
             console.log('Done!');
+            this.uiLoaded();
         }
 
         return ModelEditorControl.prototype.processNextInQueue.call(this);
+    };
+
+    BIPExecutionVizControl.prototype.uiLoaded = function () {
+
+    };
+
+    BIPExecutionVizControl.prototype.onActivate = function () {
+        // this._attachClientEventListeners();
+        // this._displayToolbarItems();
+        // if (this._selectedAspect) {
+        //     WebGMEGlobal.State.registerActiveAspect(this._selectedAspect);
+        // }
+        //
+        // if (this.currentNodeInfo && typeof this.currentNodeInfo.id === 'string') {
+        //     WebGMEGlobal.State.registerActiveObject(this.currentNodeInfo.id, {suppressVisualizerFromNode: true});
+        // }
     };
 
     return BIPExecutionVizControl;

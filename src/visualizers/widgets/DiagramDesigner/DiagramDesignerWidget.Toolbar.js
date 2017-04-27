@@ -360,24 +360,27 @@ define([
                 this.toolbarItems.cpTextColor.enabled(false);
             }
 
-            if (this._defaultSearchUI === true) {
-                this.toolbarItems.filterBox = toolbar.addTextBox(
-                    {
-                        prependContent: '<i class="glyphicon glyphicon-search"></i>&nbsp;',
-                        placeholder: 'Find...',
-                        textChangedFn: function (oldVal, newVal) {
-                            self.searchManager.filterItems(newVal);
-                        }
-                    });
+            if (!this._hideAllEditToolbarBtns) {
+                if (this._defaultSearchUI === true) {
+                    this.toolbarItems.filterBox = toolbar.addTextBox(
+                        {
+                            prependContent: '<i class="glyphicon glyphicon-search"></i>&nbsp;',
+                            placeholder: 'Find...',
+                            textChangedFn: function (oldVal, newVal) {
+                                self.searchManager.filterItems(newVal);
+                            }
+                        });
+                }
+
+                this.toolbarItems.printDiagram = toolbar.addButton({
+                    title: 'Print',
+                    icon: 'fa fa-print',
+                    clickFn: function () {
+                        self.prepAndPrintCanvas();
+                    }
+                });
             }
 
-            this.toolbarItems.printDiagram = toolbar.addButton({
-                title: 'Print',
-                icon: 'fa fa-print',
-                clickFn: function () {
-                    self.prepAndPrintCanvas();
-                }
-            });
         }
 
         this._toolbarInitialized = true;

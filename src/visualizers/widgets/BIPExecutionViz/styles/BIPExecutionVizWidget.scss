@@ -2,11 +2,17 @@
  * This file is for any scss that you may want for this visualizer.
  */
 
-.bip-execution-viz {
-  outline: none;
+.diagram-designer-tabs-container {
+  &.bip-editors-diagram-designer-tabs-container {
+
+    display: none;
+  }
 }
 
 div.bip-execution-viz-filter-panel {
+  div.header {
+    min-width: 46px;
+  }
   ul.body {
     li.filterItem {
       font-size: 16px;
