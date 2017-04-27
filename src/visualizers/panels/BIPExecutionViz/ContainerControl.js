@@ -10,6 +10,7 @@ define([
     'js/Utils/GMEConcepts',
     'js/NodePropertyNames',
     './BIPExecutionVizInnerPanel',
+    './checkResultsConsistency',
     'q',
     'text!./SwitchableRoutesEngineOutput.json'
 ], function (BlobClient,
@@ -17,6 +18,7 @@ define([
              GMEConcepts,
              nodePropertyNames,
              InnerPanel,
+             checkResultsConsistency,
              Q,
              TEST_DATA) {
 
@@ -44,6 +46,9 @@ define([
 
         this._step = -1;
         this._internalStep = 0;
+
+        this._core = null;
+        this._coreNode = null;
 
         this.logger.debug('ctor finished');
     }
@@ -199,8 +204,25 @@ define([
                         severity: 'success'
                     });
 
+                    self._client.notifyUser({
+                        message: 'Looking for component types in model.',
+                        severity: 'info'
+                    });
+
+                    return Q.nfcall(self._client.getCoreInstance, {});
+                })
+                .then(function (coreData) {
+                    coreData.nodePath = self._currentNodeId;
+                    return checkResultsConsistency(coreData, self._resultData);
+                })
+                .then(function (result) {
                     self._widget.hideProgressbar();
-                    self.configureSimulationBtn.enabled(true);
+                    if (result.violation) {
+                        self._client.notifyUser(result.violation);
+                    } else {
+                        self._widget.populateConfigure(result.componentTypes);
+                        self.configureSimulationBtn.enabled(true);
+                    }
                 })
                 .catch(function (err) {
                     self._client.notifyUser({
@@ -208,7 +230,7 @@ define([
                         severity: 'error'
                     });
 
-                    self.logger(err);
+                    self.logger.error(err);
                     self._widget.hideProgressbar();
                 });
 
@@ -218,7 +240,10 @@ define([
     };
 
     ContainerControl.prototype._onUpdate = function (gmeId) {
-
+        this._client.notifyUser({
+            message: 'Updates are taking place in model - this might lead to outdated results!',
+            severity: 'warning'
+        });
     };
 
     ContainerControl.prototype._onUnload = function (gmeId) {
