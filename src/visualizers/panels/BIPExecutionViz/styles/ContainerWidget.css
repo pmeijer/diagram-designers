@@ -1,10 +1,36 @@
 /**
- * This file is for any css that you may want for this visualizer.
- *
- * Ideally, you would use the scss file also provided in this directory 
- * and then generate this file automatically from that. However, you can 
- * simply write css if you prefer
+ * This file is for any scss that you may want for this visualizer.
  */
-
-.container {
+div.bip-execution-container-widget {
   outline: none; }
+  div.bip-execution-container-widget.panel-body {
+    background-color: whitesmoke; }
+    div.bip-execution-container-widget.panel-body.simulation-mode {
+      background-color: #fff; }
+  div.bip-execution-container-widget .configuration-form {
+    width: 30%;
+    border-radius: 5px;
+    min-width: 375px;
+    margin-top: 40px;
+    background-color: #fff;
+    padding: 20px;
+    margin-left: auto;
+    margin-right: auto; }
+    div.bip-execution-container-widget .configuration-form .configuration-title {
+      margin-bottom: 10px;
+      font-size: 14px;
+      font-weight: bold; }
+    div.bip-execution-container-widget .configuration-form .configuration-desc {
+      margin-bottom: 10px;
+      font-size: 10px; }
+    div.bip-execution-container-widget .configuration-form .form-group.btn-container {
+      margin-bottom: 0;
+      margin-top: 20px; }
+      div.bip-execution-container-widget .configuration-form .form-group.btn-container .btn-config {
+        margin-left: 20px; }
+    div.bip-execution-container-widget .configuration-form .form-group .control-label {
+      font-size: 12px;
+      font-weight: bold;
+      padding-top: 2px; }
+    div.bip-execution-container-widget .configuration-form .form-group .controls {
+      font-size: 10px; }

@@ -24,15 +24,19 @@ define([
 
     'use strict';
     var RESULT_ATTR = 'engineOutput',
-        TEST = true;
+        TEST = false;
 
     function ContainerControl(options) {
-
+        var self = this;
         this.logger = options.logger.fork('Control');
 
         this._client = options.client;
         this._widget = options.widget;
         this._layoutManager = options.layoutManager;
+
+        this._widget.notifyUser = function (notification) {
+            self._client.notifyUser(notification);
+        };
 
         this._currentNodeId = null;
         this._panels = [];
@@ -47,13 +51,20 @@ define([
         this._step = -1;
         this._internalStep = 0;
 
+        this._prevStep = {
+            step: -1,
+            internalStep: 0
+        };
+
+        this._stepDelay = 2000;
+
         this._core = null;
         this._coreNode = null;
 
         this.logger.debug('ctor finished');
     }
 
-    ContainerControl.prototype._configureSimulation = function (nodeIds) {
+    ContainerControl.prototype._configureSimulation = function (nodeIds, delay) {
         var self = this,
             cnt;
 
@@ -61,12 +72,13 @@ define([
             cnt -= 1;
 
             if (cnt === 0) {
-                alert('All panels ready!');
-                self._panels.forEach(function(p) {
+                self._panels.forEach(function (p) {
                     p.control.initializeSimulation(self._resultData);
+                    p.control.updateSettings({stepDelay: delay});
                 });
 
-                self.startSimulationBtn.enabled(true);
+                self.stepForwardBtn.enabled(true);
+                self.stepBackBtn.enabled(false);
                 self._step = 0;
             }
 
@@ -92,31 +104,58 @@ define([
         });
     };
 
-    ContainerControl.prototype._stepSimulation = function () {
+    ContainerControl.prototype._stepSimulation = function (back) {
         var self = this,
             promises;
 
-        self.startSimulationBtn.enabled(false);
+        self.stepForwardBtn.enabled(false);
+        self.stepBackBtn.enabled(false);
 
         promises = this._panels.map(function (p) {
-            return p.control.stepSimulation(self._resultData.output[self._step], self._internalStep);
+            var step = back ? self._prevStep.step : self._step,
+                internalStep = back ? self._prevStep.internalStep : self._internalStep;
+
+            return p.control.stepSimulation(self._resultData.output[step], internalStep, back);
         });
 
         Q.all(promises)
-            .then(function (res) {
-                self.startSimulationBtn.enabled(true);
+            .then(function (/*res*/) {
+                var maxStep;
 
-                if (res.indexOf(true) > -1) {
-                    self._internalStep += 1;
+                if (back) {
+                    self._step = self._prevStep.step;
+                    self._internalStep = self._prevStep.internalStep;
+
+                    if (self._prevStep.internalStep > 0) {
+                        self._prevStep.internalStep -= 1;
+                    } else {
+                        self._prevStep.step -= 1;
+                        if (self._prevStep.step > -1) {
+                            maxStep = self._getMaxInternalSteps(self._resultData.output[self._prevStep.step]);
+                            self._prevStep.internalStep = maxStep - 1;
+                        }
+                    }
+
                 } else {
-                    self._internalStep = 0;
-                    self._step += 1;
+                    self._prevStep.step = self._step;
+                    self._prevStep.internalStep = self._internalStep;
+                    maxStep = self._getMaxInternalSteps(self._resultData.output[self._step]);
+
+                    if (self._internalStep < maxStep - 1) {
+                        self._internalStep += 1;
+                    } else {
+                        self._internalStep = 0;
+                        self._step += 1;
+                    }
                 }
 
-                if (self._step >= self._resultData.output.length) {
-                    alert('Simulation ended');
-                    self._step = 0;
-                    self._internalStep = 0;
+                self.stepForwardBtn.enabled(true);
+                self.stepBackBtn.enabled(true);
+
+                if (self._prevStep.step === -1) {
+                    self.stepBackBtn.enabled(false);
+                } else if (self._step === self._resultData.output.length) {
+                    self.stepForwardBtn.enabled(false);
                 }
             })
             .catch(function (err) {
@@ -124,9 +163,28 @@ define([
             });
     };
 
+    ContainerControl.prototype._getMaxInternalSteps = function (stepData) {
+        return Object.keys(stepData)
+            .map(function (componentId) {
+                // For each component ..
+                return Object.keys(stepData[componentId].transitions)
+                    .map(function (instanceId) {
+                        // .. check the internal steps for the instances ..
+                        return stepData[componentId].transitions[instanceId].length;
+                    })
+                    .reduce(function (max, curr) {
+                        // .. and collect the longest ..
+                        return curr > max ? curr : max;
+                    }, 0);
+            })
+            .reduce(function (max, curr) {
+                // .. finally return the maximum of these.
+                return curr > max ? curr : max;
+            }, 0);
+    };
+
     ContainerControl.prototype.selectedObjectChanged = function (nodeId) {
-        var desc = this._getObjectDescriptor(nodeId),
-            self = this;
+        var self = this;
 
         this._panels.forEach(function (p) {
             p.destroy();
@@ -146,8 +204,6 @@ define([
             // Put new node's info into territory rules
             self._selfPatterns = {};
             self._selfPatterns[nodeId] = {children: 0};  // Territory "rule"
-
-            self._widget.setTitle(desc.name.toUpperCase());
 
             self._territoryId = self._client.addUI(self, function (events) {
                 self._eventCallback(events);
@@ -184,23 +240,19 @@ define([
 
     ContainerControl.prototype._onLoad = function (gmeId) {
         var self = this,
-            node,
-            blobHash;
-
-        node = this._client.getNode(gmeId);
+            desc = this._getObjectDescriptor(gmeId);
 
         this._resultData = null;
+
+        self._widget.setTitle(desc.name);
         this._widget.showProgressbar();
-        this.configureSimulationBtn.enabled(false);
 
-        blobHash = node ? node.getAttribute(RESULT_ATTR) : null;
-
-        if (blobHash) {
-            this._blobClient.getObjectAsJSON(blobHash)
+        if (desc.blobHash) {
+            this._blobClient.getObjectAsJSON(desc.blobHash)
                 .then(function (resultData) {
                     self._resultData = resultData;
                     self._client.notifyUser({
-                        message: 'Current Project has attached results! To start result simulation use tool-bar.',
+                        message: 'Current model has attached results!',
                         severity: 'success'
                     });
 
@@ -220,9 +272,15 @@ define([
                     if (result.violation) {
                         self._client.notifyUser(result.violation);
                     } else {
-                        self._widget.populateConfigure(result.componentTypes);
-                        self.configureSimulationBtn.enabled(true);
+                        self._client.notifyUser({
+                            severity: 'success',
+                            message: 'Current model is consistent with results, configure the simulation..'
+                        });
                     }
+
+                    self._widget.populateConfigure(result.componentTypes, function (nodeIds, delay) {
+                        self._configureSimulation(nodeIds, delay);
+                    });
                 })
                 .catch(function (err) {
                     self._client.notifyUser({
@@ -255,10 +313,12 @@ define([
     ContainerControl.prototype._getObjectDescriptor = function (nodeId) {
         var node = this._client.getNode(nodeId),
             objDescriptor;
+
         if (node) {
             objDescriptor = {
                 id: node.getId(),
                 name: node.getAttribute(nodePropertyNames.Attributes.name),
+                blobHash: node.getAttribute(RESULT_ATTR),
                 childrenIds: node.getChildrenIds(),
                 parentId: node.getParentId()
             };
@@ -340,66 +400,69 @@ define([
 
         this._toolbarItems = [];
 
-        // Configure btn
+        // Settings btn
         this.configureSimulationBtn = toolBar.addButton(
             {
-                title: 'Configure simulation',
+                title: 'Settings',
                 icon: 'fa fa-cogs',
                 clickFn: function (/*data*/) {
-                    self._configureSimulation();
+                    alert('TODO: Implement settings that can change during simulation');
                 }
             });
 
         this._toolbarItems.push(this.configureSimulationBtn);
-        this.configureSimulationBtn.enabled(false);
 
-        // Start btn
-        this.startSimulationBtn = toolBar.addButton(
+        // step back btn
+        this.stepBackBtn = toolBar.addButton(
             {
-                title: 'Start simulation',
-                icon: 'fa fa-film',
+                title: 'Step backward',
+                icon: 'fa fa-step-backward',
+                clickFn: function (/*data*/) {
+                    self._stepSimulation(true);
+                }
+            });
+
+        this._toolbarItems.push(this.stepBackBtn);
+        this.stepBackBtn.enabled(false);
+
+        // play btn
+        // this.startSimulationBtn = toolBar.addButton(
+        //     {
+        //         title: 'Play simulation',
+        //         icon: 'fa fa-play-circle-o',
+        //         clickFn: function (/*data*/) {
+        //             self._stepSimulation();
+        //         }
+        //     });
+        //
+        // this._toolbarItems.push(this.startSimulationBtn);
+        // this.startSimulationBtn.enabled(false);
+        //
+        // this.pauseSimulationBtn = toolBar.addButton(
+        //     {
+        //         title: 'Pause simulation',
+        //         icon: 'fa fa-pause-circle-o',
+        //         clickFn: function (/*data*/) {
+        //             self._stepSimulation();
+        //         }
+        //     });
+        //
+        // this._toolbarItems.push(this.pauseSimulationBtn);
+        // this.pauseSimulationBtn.hide();
+
+        // step forward btn
+        this.stepForwardBtn = toolBar.addButton(
+            {
+                title: 'Step forward',
+                icon: 'fa fa-step-forward',
                 clickFn: function (/*data*/) {
                     self._stepSimulation();
                 }
             });
 
-        this._toolbarItems.push(this.startSimulationBtn);
-        this.startSimulationBtn.enabled(false);
+        this._toolbarItems.push(this.stepForwardBtn);
+        this.stepForwardBtn.enabled(false);
 
-        // this.nextFrameBtn = toolBar.addButton(
-        //     {
-        //         title: 'Next frame',
-        //         icon: 'fa fa-film',
-        //         clickFn: function (/*data*/) {
-        //             if (self._step < 0) {
-        //                 self._initializeSimulation();
-        //             } else {
-        //                 self.startSimulationBtn.enabled(false);
-        //                 Q.all([self._stepSimulation(self._resultData.output[self._step], self._internalStep)])
-        //                     .then(function (res) {
-        //                         self.startSimulationBtn.enabled(true);
-        //                         if (res.indexOf(true) > -1) {
-        //                             self._internalStep += 1;
-        //                         } else {
-        //                             self._internalStep = 0;
-        //                             self._step += 1;
-        //                         }
-        //
-        //                         if (self._step >= self._resultData.output.length) {
-        //                             alert('Simulation ended');
-        //                             self._step = 0;
-        //                             self._internalStep = 0;
-        //                         }
-        //                     })
-        //                     .catch(function (err) {
-        //                         self.logger.error('Simulation step failed!', err);
-        //                     });
-        //             }
-        //         }
-        //     });
-        //
-        // this._toolbarItems.push(this.nextFrameBtn);
-        this.startSimulationBtn.enabled(false);
 
         this._toolbarInitialized = true;
     };

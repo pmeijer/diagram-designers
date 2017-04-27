@@ -9,19 +9,17 @@ define([
     'js/PanelManager/IActivePanel',
     './ContainerControl',
     './ContainerWidget'
-], function (
-    PanelBaseWithHeader,
-    IActivePanel,
-    ContainerControl,
-    ContainerWidget
-) {
+], function (PanelBaseWithHeader,
+             IActivePanel,
+             ContainerControl,
+             ContainerWidget) {
     'use strict';
 
     function ContainerPanel(layoutManager, params) {
         var options = {};
         //set properties from options
         options[PanelBaseWithHeader.OPTIONS.LOGGER_INSTANCE_NAME] = 'BIPExecutionVizPanel';
-        //options[PanelBaseWithHeader.OPTIONS.FLOATING_TITLE] = true;
+        options[PanelBaseWithHeader.OPTIONS.FLOATING_TITLE] = true;
 
         //call parent's constructor
         PanelBaseWithHeader.apply(this, [options, layoutManager]);

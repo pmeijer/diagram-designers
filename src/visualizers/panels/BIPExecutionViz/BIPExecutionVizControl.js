@@ -1,4 +1,4 @@
-/*globals define, WebGMEGlobal, _*/
+/*globals define, WebGMEGlobal, _, $*/
 /*jshint browser: true*/
 /**
  * Visualizer control on top of "BIP" ModelEditorControl that visualizes the simulation trace.
@@ -22,6 +22,8 @@ define([
         this._chance = new Chance('BIPExecutionVizControl');
         this._stepDelay = STEP_DELAY;
 
+        this._loaded = false;
+
         this._inStep = false;
         this._pendingActivate = {};
 
@@ -32,6 +34,7 @@ define([
 
     _.extend(BIPExecutionVizControl.prototype, ModelEditorControl.prototype);
 
+    // API used by Container Controller
     BIPExecutionVizControl.prototype.initializeSimulation = function (resultData) {
         var self = this,
             initialStateDecorator,
@@ -92,12 +95,12 @@ define([
             initialColors.forEach(function (color) {
                 initialStateDecorator.colorToPathEl[color]
                     .animate({opacity: 1}, 100);
-            })
+            });
         }
 
     };
 
-    BIPExecutionVizControl.prototype.stepSimulation = function (stepData, internalStep) {
+    BIPExecutionVizControl.prototype.stepSimulation = function (stepData, internalStep, back) {
         var deferred = Q.defer(),
             self = this,
             hasMoreSteps = false,
@@ -204,17 +207,27 @@ define([
         if (stepData[this.currentNodeInfo.id]) {
             transitions = stepData[self.currentNodeInfo.id].transitions;
             Object.keys(transitions).forEach(function (instanceId) {
-                if (self._instances[instanceId] && transitions[instanceId].length > internalStep) {
-                    hasMoreSteps = hasMoreSteps || transitions[instanceId].length > (internalStep + 1);
+                var srcState,
+                    dstState;
 
-                    if (self._instances[instanceId].active === true) {
-                        doTransition(instanceId,
-                            transitions[instanceId][internalStep].srcState.id,
-                            transitions[instanceId][internalStep].transition.id,
-                            transitions[instanceId][internalStep].dstState.id);
+                if (self._instances[instanceId] && transitions[instanceId].length > internalStep) {
+                    if (back) {
+                        srcState = transitions[instanceId][internalStep].dstState.id;
+                        dstState = transitions[instanceId][internalStep].srcState.id;
+                        hasMoreSteps = internalStep > 0; // This applies to all..
+                    } else {
+                        srcState = transitions[instanceId][internalStep].srcState.id;
+                        dstState = transitions[instanceId][internalStep].dstState.id;
+                        hasMoreSteps = hasMoreSteps || transitions[instanceId].length > (internalStep + 1);
                     }
 
-                    self._instances[instanceId].stateId = transitions[instanceId][internalStep].dstState.id;
+                    if (self._instances[instanceId].active === true) {
+                        doTransition(instanceId, srcState,
+                            transitions[instanceId][internalStep].transition.id,
+                            dstState);
+                    }
+
+                    self._instances[instanceId].stateId = dstState;
                 }
             });
         }
@@ -227,6 +240,15 @@ define([
         return deferred.promise;
     };
 
+    BIPExecutionVizControl.prototype.uiLoaded = function () {
+        // Overridden by Container to see that all objects added to canvas.
+    };
+
+    BIPExecutionVizControl.prototype.updateSettings = function (settings) {
+        this._stepDelay = settings.stepDelay;
+    };
+
+    // Helper methods
     BIPExecutionVizControl.prototype._getInitialStateId = function () {
         var node,
             i;
@@ -357,16 +379,12 @@ define([
     };
 
     BIPExecutionVizControl.prototype.processNextInQueue = function () {
-        if (this.eventQueue.length === 0) {
-            console.log('Done!');
+        if (this.eventQueue.length === 0 && this._loaded === false) {
+            this._loaded = true;
             this.uiLoaded();
         }
 
         return ModelEditorControl.prototype.processNextInQueue.call(this);
-    };
-
-    BIPExecutionVizControl.prototype.uiLoaded = function () {
-
     };
 
     BIPExecutionVizControl.prototype.onActivate = function () {

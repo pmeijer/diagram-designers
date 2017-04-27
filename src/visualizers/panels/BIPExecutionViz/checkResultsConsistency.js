@@ -1,8 +1,10 @@
-/*globals*/
+/*globals define*/
 /**
  * @author pmeijer / https://github.com/pmeijer
  */
+
 define([], function () {
+    'use strict';
 
     /**
      *
@@ -23,7 +25,7 @@ define([], function () {
                     //{
                     //  id: <pathToNode>
                     //  name: <name>
-                    //  cardinality:
+                    //  cardinality: <number>
                     //}
                 ],
                 violation: null
@@ -40,8 +42,8 @@ define([], function () {
         function checkComponentType(node) {
             return core.loadChildren(node)
                 .then(function (children) {
-                    children.forEach(function (childNode) {
-                        console.log(core.getAttribute(childNode, 'name'), ' - ', core.getPath(childNode));
+                    children.forEach(function (/*childNode*/) {
+                        //console.log(core.getAttribute(childNode, 'name'), ' - ', core.getPath(childNode));
                     });
                 });
         }
@@ -84,6 +86,17 @@ define([], function () {
             })
             .then(function () {
                 // TODO: Make final checks here
+
+                result.componentTypes.sort(function (a, b) {
+                    if (a.name.toLowerCase() > b.name.toLowerCase()) {
+                        return 1;
+                    } else if (a.name.toLowerCase() === b.name.toLowerCase()) {
+                        return 0;
+                    } else {
+                        return -1;
+                    }
+                });
+
                 return result;
             })
             .nodeify(callback);
