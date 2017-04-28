@@ -86,6 +86,7 @@ define([
                         left = w;
                     } else { // === '3'
                         top = h;
+                        w = width;
                     }
                     break;
                 case 4:
