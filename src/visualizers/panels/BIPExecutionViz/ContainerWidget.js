@@ -13,14 +13,15 @@ define([
     'use strict';
 
     var ContainerWidget,
-        MAX_NUMBER_OF_PANELS = 1,
+        MAX_NUMBER_OF_PANELS = 4,
         WIDGET_CLASS = 'bip-execution-container-widget';
 
     ContainerWidget = function (logger, container) {
         this._logger = logger.fork('Widget');
 
         this._el = container;
-        this._panels = [];
+        this._panels = {};
+        this._nbrOfPanels = null;
         this._components = null;
 
         this._initialize();
@@ -33,6 +34,7 @@ define([
         this._el.addClass(WIDGET_CLASS);
         this._loader = new LoaderCircles({containerElement: this._el});
 
+        // Add configuration elements
         this._configContainer = $('<div class="configuration-form">' +
             '<div class="configuration-title">Number of Panels</div>' +
             '<div class="configuration-desc">Select the number of panels you would like to allocate ' +
@@ -45,19 +47,101 @@ define([
 
         this._el.append(this._configContainer);
         this._configContainer.hide();
+
+        // Add simulation panel elements
+        this._panelsContainer = $('<div class="panels-container">');
+        this._el.append(this._panelsContainer);
+
+        this._panelsContainer.hide();
     };
 
     ContainerWidget.prototype.onWidgetContainerResize = function (width, height) {
-        this._logger.debug('Widget is resizing...');
-        // TODO: Propagate there properly..
+        var self = this;
+
+        this._el.width(width);
+        this._el.height(height);
+
+        Object.keys(this._panels).forEach(function (key) {
+            var left = 0,
+                top = 0,
+                w,
+                h;
+
+            switch (self._nbrOfPanels) {
+                case 1:
+                    w = width;
+                    h = height;
+                    break;
+                case 2:
+                    w = width / 2;
+                    h = height;
+                    left = key === '2' ? w : 0;
+                    break;
+                case 3:
+                    h = height / 2;
+                    if (key === '1') {
+                        w = width / 2;
+                    } else if (key === '2') {
+                        w = width / 2;
+                        left = w;
+                    } else { // === '3'
+                        top = h;
+                    }
+                    break;
+                case 4:
+                    h = height / 2;
+                    w = width / 2;
+                    if (key === '2') {
+                        left = w;
+                    } else if (key === '3') {
+                        top = h;
+                    } else if (key === '4') {
+                        top = h;
+                        left = w;
+                    }
+                    break;
+                default:
+                    throw new Error('Unexpected panel count!');
+            }
+
+            self._panels[key].el.css({
+                top: top,
+                left: left,
+                width: w,
+                height: h
+            });
+
+            self._panels[key].panel.setSize(w, h);
+        });
     };
 
     // Adding/Removing/Updating items
     ContainerWidget.prototype.addInnerPanel = function (panel) {
-        // TODO: assign these to the correct panel container.
-        this._panels.push(panel);
-        this._el.append(panel.$pEl);
-        panel.setSize(this._el.width(), this._el.height());
+        var containerEl = $('<div class="panel-container">');
+
+        this._panels[(Object.keys(this._panels).length + 1).toString()] = {
+            panel: panel,
+            el: containerEl
+        };
+
+        containerEl.append(panel.$pEl);
+
+        this._panelsContainer.append(containerEl);
+
+        if (Object.keys(this._panels).length === this._nbrOfPanels) {
+            // When all are added - resize the container.
+            this.onWidgetContainerResize(this._el.width(), this._el.height());
+        }
+    };
+
+    ContainerWidget.prototype._addPanelContainers = function (nodeIds) {
+        var self = this;
+        this._nbrOfPanels = nodeIds.length;
+
+        self.setTitle('');
+        self._el.addClass('simulation-mode');
+
+        this._panelsContainer.show();
     };
 
     ContainerWidget.prototype.populateConfigure = function (componentTypes, callback) {
@@ -137,7 +221,7 @@ define([
         settings.append($('<div class="col-sm-6 control-label">').text('Step Animation Time [ms]'));
 
         sWidget = new IntegerWidget({
-            value: 2000,
+            value: 1000,
             minValue: 0,
             name: 'stepTime',
             id: 'stepTime'
@@ -168,8 +252,7 @@ define([
 
             self._configForm.empty();
             self._configContainer.hide();
-            self.setTitle('');
-            self._el.addClass('simulation-mode');
+            self._addPanelContainers(nodeIds);
 
             callback(nodeIds, delay);
         });
@@ -197,7 +280,14 @@ define([
     };
 
     ContainerWidget.prototype.destroy = function () {
-        // The inner panels are destroyed by the controller.
+        var self = this;
+
+        Object.keys(this._panels).forEach(function (key) {
+            self._panels[key].panel.destroy();
+        });
+
+        self._panels = {};
+        this._el.remove();
     };
 
     ContainerWidget.prototype.onActivate = function () {

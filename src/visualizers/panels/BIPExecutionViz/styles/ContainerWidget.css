@@ -6,7 +6,9 @@ div.bip-execution-container-widget {
   div.bip-execution-container-widget.panel-body {
     background-color: whitesmoke; }
     div.bip-execution-container-widget.panel-body.simulation-mode {
-      background-color: #fff; }
+      background-color: #fff;
+      padding: 0;
+      overflow: hidden; }
   div.bip-execution-container-widget .configuration-form {
     width: 30%;
     border-radius: 5px;
@@ -34,3 +36,6 @@ div.bip-execution-container-widget {
       padding-top: 2px; }
     div.bip-execution-container-widget .configuration-form .form-group .controls {
       font-size: 10px; }
+  div.bip-execution-container-widget .panels-container .panel-container {
+    position: absolute;
+    border: lightgrey solid 1px; }

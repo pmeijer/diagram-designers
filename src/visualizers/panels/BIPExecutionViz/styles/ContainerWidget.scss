@@ -9,6 +9,8 @@ div.bip-execution-container-widget {
     background-color: whitesmoke;
     &.simulation-mode {
       background-color: #fff;
+      padding: 0;
+      overflow: hidden;
     }
   }
 
@@ -49,4 +51,10 @@ div.bip-execution-container-widget {
     }
   }
 
+  .panels-container {
+    .panel-container {
+      position: absolute;
+      border: lightgrey solid 1px;
+    }
+  }
 }

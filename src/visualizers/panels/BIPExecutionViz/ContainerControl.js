@@ -56,7 +56,7 @@ define([
             internalStep: 0
         };
 
-        this._stepDelay = 2000;
+        this._stepDelay = 1000;
 
         this._core = null;
         this._coreNode = null;
@@ -274,7 +274,7 @@ define([
                     } else {
                         self._client.notifyUser({
                             severity: 'success',
-                            message: 'Current model is consistent with results, configure the simulation..'
+                            message: 'Current model is consistent with results!'
                         });
                     }
 
