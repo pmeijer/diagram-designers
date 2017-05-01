@@ -128,7 +128,7 @@ define([
                 sources[src] = {
                     decorator: srcDecorator,
                     colors: [color]
-                }
+                };
             }
 
             if (destinations[dst]) {
@@ -137,7 +137,7 @@ define([
                 destinations[dst] = {
                     decorator: dstDecorator,
                     colors: [color]
-                }
+                };
             }
 
             if (conns[dst]) {
@@ -146,7 +146,7 @@ define([
                 conns[dst] = {
                     decorator: conn,
                     colors: [color]
-                }
+                };
             }
 
             cnt += 1;
@@ -321,8 +321,8 @@ define([
         var self = this;
 
         Object.keys(this._pendingActivate).forEach(function (id) {
-            var decorator,
-                colors;
+            var decorator;
+
             if (self._instances[id].active !== self._pendingActivate[id]) {
                 self._instances[id].active = self._pendingActivate[id];
 
@@ -344,10 +344,6 @@ define([
 
     // Methods overridden from ModelEditor
     BIPExecutionVizControl.prototype.selectedObjectChanged = function (nodeId) {
-        var self = this,
-            node,
-            blobHash;
-
         ModelEditorControl.prototype.selectedObjectChanged.call(this, nodeId);
     };
 
