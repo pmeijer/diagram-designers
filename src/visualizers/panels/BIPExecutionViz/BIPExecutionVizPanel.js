@@ -99,5 +99,9 @@ define([
         WebGMEGlobal.Toolbar.refresh();
     };
 
+    ContainerPanel.prototype.getValidTypesInfo = function (/*nodeId, aspect*/) {
+        return {};
+    };
+
     return ContainerPanel;
 });
