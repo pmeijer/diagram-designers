@@ -22,15 +22,14 @@
     "users": "node ./node_modules/webgme/src/bin/usermanager.js",
     "clean_up": "node ./node_modules/webgme/src/bin/clean_up.js"
   },
-  "version": "0.0.1",
+  "version": "0.1.0",
   "keywords": [
     "webgme",
     "webgme-diagram-designers",
     "webgme-bip",
     "webgme-domain"
   ],
-  "peerDependencies": {
-  },
+  "peerDependencies": {},
   "devDependencies": {
     "jscs": "^3.0.7",
     "jshint": "^2.9.3",
@@ -40,8 +39,6 @@
     "webgme": "^2.0.0",
     "webgme-bip": "github:anmavrid/webgme-bip"
   },
-  "dependencies": {
-
-  },
+  "dependencies": {},
   "license": "MIT"
 }
