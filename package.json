@@ -23,7 +23,7 @@
     "rimraf": "^2.4.0",
     "chai": "^3.0.0",
     "webgme": "github:webgme/webgme#line-lable-offsets",
-    "webgme-bip": "github:anmavrid/webgme-bip#state-res-viz"
+    "webgme-bip": "github:anmavrid/webgme-bip"
   },
   "dependencies": {
 

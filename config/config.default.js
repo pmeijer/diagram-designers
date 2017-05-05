@@ -7,7 +7,8 @@ var config = require('./config.webgme'),
 // config.server.port = 8080;
 // config.mongo.uri = 'mongodb://127.0.0.1:27017/webgme_my_app';
 
-config.visualization.svgDirs.push('./svgs');
+config.visualization.svgDirs.push('./node_modules/webgme-bip/src/svgs');
+config.mongo.uri = 'mongodb://127.0.0.1:27017/bip';
 
 validateConfig(config);
 module.exports = config;
