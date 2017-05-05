@@ -247,7 +247,9 @@ define(['js/logger',
     };
 
     ModelEditorControlDiagramDesignerWidgetEventHandlers.prototype._onCreateNewConnection = function (params) {
-        var sourceId,
+        var self = this,
+            parentNode,
+            sourceId,
             targetId,
             parentId = this.currentNodeInfo.id,
             createConnection,
@@ -263,7 +265,8 @@ define(['js/logger',
 
         //local callback to create the connection
         createConnection = function (connTypeToCreate) {
-            if (connTypeToCreate) {
+            parentNode = _client.getNode(parentId);
+            if (connTypeToCreate && parentNode) {
                 _client.startTransaction();
 
                 //create new object
@@ -272,6 +275,10 @@ define(['js/logger',
                 //set source and target pointers
                 _client.setPointer(newConnID, CONSTANTS.POINTER_SOURCE, sourceId);
                 _client.setPointer(newConnID, CONSTANTS.POINTER_TARGET, targetId);
+
+                if (self.isOfMetaTypeName(parentNode.getMetaTypeId(), 'ComponentType')) {
+                    _client.setRegistry(newConnID, REGISTRY_KEYS.LINE_TYPE, CONSTANTS.LINE_STYLE.TYPES.BEZIER);
+                }
 
                 _client.completeTransaction();
             }
