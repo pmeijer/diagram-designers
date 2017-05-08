@@ -32,7 +32,7 @@ define([
             this._onItemCreateQueue = {};
             this.workerQueue = [];
 
-            var workerFile = 'js/widgets/DiagramDesigner/AutoRouter.Worker.js';
+            var workerFile = 'js/Widgets/DiagramDesigner/AutoRouter.Worker.js';
 
             this.worker = new Worker(workerFile);
             this.worker.postMessage([WebGMEGlobal.gmeConfig.client]);

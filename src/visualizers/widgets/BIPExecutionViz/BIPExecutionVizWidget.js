@@ -6,7 +6,7 @@
  */
 
 define([
-    'widgets/DiagramDesigner/DiagramDesignerWidget',
+    '../DiagramDesigner/DiagramDesignerWidget',
     'js/Controls/iCheckBox',
     'css!./styles/BIPExecutionVizWidget.css'
 ], function (DiagramDesignerWidget, ICheckBox) {

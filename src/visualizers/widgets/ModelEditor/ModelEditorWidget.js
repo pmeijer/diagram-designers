@@ -7,7 +7,7 @@
 
 define([
     'js/DragDrop/DragHelper',
-    'widgets/DiagramDesigner/DiagramDesignerWidget'
+    '../DiagramDesigner/DiagramDesignerWidget'
 ], function (DragHelper, DiagramDesignerWidget) {
 
     'use strict';
