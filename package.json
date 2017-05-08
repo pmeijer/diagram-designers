@@ -22,7 +22,7 @@
     "users": "node ./node_modules/webgme/src/bin/usermanager.js",
     "clean_up": "node ./node_modules/webgme/src/bin/clean_up.js"
   },
-  "version": "0.1.0",
+  "version": "0.1.1",
   "keywords": [
     "webgme",
     "webgme-diagram-designers",
