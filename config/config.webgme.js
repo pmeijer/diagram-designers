@@ -21,10 +21,10 @@ config.visualization.panelPaths.push(__dirname + '/../src/visualizers/panels');
 config.visualization.visualizerDescriptors.push(__dirname + '/../src/visualizers/Visualizers.json');
 // Add requirejs paths
 config.requirejsPaths = {
-  'BIP': 'node_modules\webgme-bip\src\seeds\BIP',
-  'BIPStateDecorator': 'node_modules\webgme-bip\src\decorators\BIPStateDecorator',
-  'BIPConnectorEndDecorator': 'node_modules\webgme-bip\src\decorators\BIPConnectorEndDecorator',
-  'BIPComponentTypeDecorator': 'node_modules\webgme-bip\src\decorators\BIPComponentTypeDecorator',
+  'BIP': 'node_modules/webgme-bip/src/seeds/BIP',
+  'BIPStateDecorator': 'node_modules/webgme-bip/src/decorators/BIPStateDecorator',
+  'BIPConnectorEndDecorator': 'node_modules/webgme-bip/src/decorators/BIPConnectorEndDecorator',
+  'BIPComponentTypeDecorator': 'node_modules/webgme-bip/src/decorators/BIPComponentTypeDecorator',
   'panels': './src/visualizers/panels',
   'widgets': './src/visualizers/widgets'
 };

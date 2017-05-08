@@ -339,6 +339,7 @@ define([
     ContainerControl.prototype.destroy = function () {
         this._detachClientEventListeners();
         this._removeToolbarItems();
+        this._client.removeUI(this._territoryId);
     };
 
     ContainerControl.prototype._attachClientEventListeners = function () {
