@@ -334,11 +334,22 @@ define(['js/logger',
 
     ModelEditorControlDiagramDesignerWidgetEventHandlers.prototype._onSelectionDelete = function (idList) {
         var objIdList = [],
+            gmeIDs = [],
             i = idList.length,
             objID;
 
         while (i--) {
             objID = this._ComponentID2GMEID[idList[i]];
+            //temporary fix to not allow deleting ROOT AND FCO
+            if (objID) {
+                gmeIDs.push(objID);
+            }
+        }
+
+        gmeIDs = _.union(gmeIDs, this.getInferredConnections(gmeIDs));
+
+        for (i = 0; i < gmeIDs.length; i += 1) {
+            objID = gmeIDs[i];
             //temporary fix to not allow deleting ROOT AND FCO
             if (GMEConcepts.canDeleteNode(objID)) {
                 objIdList.pushUnique(objID);
@@ -606,6 +617,8 @@ define(['js/logger',
             origNode,
             ptrName;
 
+        items = _.union(items, this.getInferredConnections(items));
+
         this.logger.debug('dropAction: ' + JSON.stringify(dropAction));
         this.logger.debug('dragInfo: ' + JSON.stringify(dragInfo));
         this.logger.debug('position: ' + JSON.stringify(position));
@@ -809,6 +822,10 @@ define(['js/logger',
             }
         }
 
+        // Connection-types are not rendered and cannot be selected. If a connectorEnd and the corresponding
+        // component-type are selected - the Connection will be added to the selection.
+        gmeIDs = _.union(gmeIDs, this.getInferredConnections(gmeIDs));
+
         enableEditConnections = enableEditConnections && this.designerCanvas.getIsReadOnlyMode() === false;
 
         this.designerCanvas.toolbarItems.ddbtnConnectionArrowStart.enabled(enableEditConnections);
@@ -834,6 +851,8 @@ define(['js/logger',
                 gmeIDs.push(id);
             }
         }
+
+        gmeIDs = _.union(gmeIDs, this.getInferredConnections(gmeIDs));
 
         if (gmeIDs.length !== 0) {
             this._client.copyNodes(gmeIDs);
@@ -1096,6 +1115,7 @@ define(['js/logger',
 
     ModelEditorControlDiagramDesignerWidgetEventHandlers.prototype._onCopy = function () {
         var res = [],
+            gmeIDs = [],
             selectedIDs = this.designerCanvas.selectionManager.getSelectedElements(),
             i = selectedIDs.length,
             gmeID,
@@ -1108,6 +1128,11 @@ define(['js/logger',
 
         while (i--) {
             gmeID = this._ComponentID2GMEID[selectedIDs[i]];
+        }
+
+        gmeIDs = _.union(gmeIDs, this.getInferredConnections(gmeIDs));
+
+        for (i = 0; i < gmeIDs.length; i += 1) {
             obj = {
                 ID: gmeID,
                 Name: undefined,

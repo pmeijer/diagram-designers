@@ -38,7 +38,7 @@ define(['js/logger',
         SRC_POINTER_NAME = CONSTANTS.POINTER_SOURCE,
         DST_POINTER_NAME = CONSTANTS.POINTER_TARGET;
 
-    ModelEditorControl = function (options, config) {
+    ModelEditorControl = function (options/*, config*/) {
         this.logger = options.logger || Logger.create(options.loggerName || 'gme:Panels:ModelEditor:' +
                 'ModelEditorControl',
                 WebGMEGlobal.gmeConfig.client.log);
@@ -432,7 +432,8 @@ define(['js/logger',
             } else if (e.desc.kind === 'MODEL') {
                 if (this.isOfMetaTypeName(e.desc.metaTypeId, 'ConnectorEnd')) {
                     e.desc.metaTypeName = 'ConnectorEnd';
-                    this.getConnectedComponentTypeFromConnectorEnd(e.desc).forEach(function (ctId) {
+
+                    this.getConnectedComponentTypeFromConnectorEnd(e.desc).forEach(function (ctId) { // jshint ignore:line
                         extraComponentTypeUpdates[ctId] = self._getObjectDescriptor(ctId);
 
                         // If the ComponentType changes -> all the associated ConnectorEnds may change too.
@@ -447,7 +448,7 @@ define(['js/logger',
                     connectorEnds.push(e);
                 } else {
                     if (this.isOfMetaTypeName(e.desc.metaTypeId, ['ComponentType', 'CompoundType'])) {
-                        this.getConnectedConnectorEndsFromComponentType(e.desc).forEach(function (ceId) {
+                        this.getConnectedConnectorEndsFromComponentType(e.desc).forEach(function (ceId) { // jshint ignore:line
                             var ceObjDesc = self._getObjectDescriptor(ceId);
                             ceObjDesc.metaTypeName = 'ConnectorEnd';
                             extraConnEndsUpdates[ceId] = ceObjDesc;
@@ -1346,9 +1347,12 @@ define(['js/logger',
 
             metaNode = this._client.getNode(baseId);
         }
+
+        return false;
     };
 
-    ModelEditorControl.prototype.getConnectedComponentTypeFromConnectorEnd = function (objDesc) {
+    ModelEditorControl.prototype.getConnectedComponentTypeFromConnectorEnd = function (objDesc, includeConns) {
+        // This also includes CompoundTypes
         var self = this,
             connectorEndNode = this._client.getNode(objDesc.id),
             sources = connectorEndNode.getCollectionPaths('src'),
@@ -1358,7 +1362,6 @@ define(['js/logger',
             var connectionNode = self._client.getNode(connId),
                 transitionId,
                 portNode,
-                componentTypeItemId,
                 componentTypeNode;
 
             if (connectionNode && self.isOfMetaTypeName(connectionNode.getMetaTypeId(), 'Connection')) {
@@ -1369,10 +1372,15 @@ define(['js/logger',
 
                     componentTypeNode = self._client.getNode(portNode.getParentId());
                     if (componentTypeNode &&
-                        componentTypeNode.getParentId() === self.currentNodeInfo.id &&
+                            // loosen this constraint s.t. moving of nodes includes the Conns
+                        (componentTypeNode.getParentId() === self.currentNodeInfo.id || includeConns) &&
                         self.isOfMetaTypeName(componentTypeNode.getMetaTypeId(), ['ComponentType', 'CompoundType'])) {
 
-                        result.push(componentTypeNode.getId());
+                        if (includeConns) {
+                            result[componentTypeNode.getId()] = connectionNode.getId();
+                        } else {
+                            result.push(componentTypeNode.getId());
+                        }
                     }
                 }
             }
@@ -1459,6 +1467,37 @@ define(['js/logger',
         });
 
         return result;
+    };
+
+    ModelEditorControl.prototype.getInferredConnections = function (gmeIDs) {
+        var self = this,
+            currentNode = self._client.getNode(this.currentNodeInfo.id),
+            connIds = [];
+        if (currentNode &&
+            self.isOfMetaTypeName(currentNode.getMetaTypeId(), ['Project', 'CompoundType']) &&
+            gmeIDs.length >= 2) {
+
+            self.logger.debug('More than two selected objects will check for inferred Connection-types');
+            gmeIDs.forEach(function (id) {
+                var nodeObj = self._client.getNode(id),
+                    res;
+                // First get all selected "ConnectorEnd"-s
+                if (nodeObj && self.isOfMetaTypeName(nodeObj.getMetaTypeId(), 'ConnectorEnd')) {
+                    res = self.getConnectedComponentTypeFromConnectorEnd({id: id}, true);
+                    self.logger.debug('ConnectorEnd is connected via', res);
+                    Object.keys(res).forEach(function (componentId) {
+                        if (gmeIDs.indexOf(componentId) > -1 && connIds.indexOf(res[componentId]) === -1) {
+                            connIds.push(res[componentId]);
+                        }
+                    });
+                }
+            });
+
+            self.logger.debug('Adding inferred Connections', connIds);
+
+        }
+
+        return connIds;
     };
 
     ModelEditorControl.getDefaultConfig = function () {

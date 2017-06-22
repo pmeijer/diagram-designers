@@ -3,11 +3,13 @@
     "componentTypes": {
       "/f/t/1": {
         "name": "Route",
-        "cardinality": 3
+        "cardinality": 3,
+        "ids": [1, 2, 3]
       },
       "/f/t/y": {
         "name": "Monitor",
-        "cardinality": 1
+        "cardinality": 1,
+        "ids": [4]
       }
     }
   },
@@ -39,7 +41,7 @@
         "id": "/f/t/y",
         "name": "Monitor",
         "transitions": {
-          "1": [
+          "4": [
             {
               "srcState": {
                 "id": "/f/t/y/A",
@@ -85,7 +87,7 @@
         "id": "/f/t/y",
         "name": "Monitor",
         "transitions": {
-          "1": [
+          "4": [
             {
               "srcState": {
                 "id": "/f/t/y/A",
@@ -199,7 +201,7 @@
         "id": "/f/t/y",
         "name": "Monitor",
         "transitions": {
-          "1": [
+          "4": [
             {
               "srcState": {
                 "id": "/f/t/y/A",
@@ -245,7 +247,7 @@
         "id": "/f/t/y",
         "name": "Monitor",
         "transitions": {
-          "1": [
+          "4": [
             {
               "srcState": {
                 "id": "/f/t/y/A",
@@ -291,7 +293,7 @@
         "id": "/f/t/y",
         "name": "Monitor",
         "transitions": {
-          "1": [
+          "4": [
             {
               "srcState": {
                 "id": "/f/t/y/A",
@@ -337,7 +339,7 @@
         "id": "/f/t/y",
         "name": "Monitor",
         "transitions": {
-          "1": [
+          "4": [
             {
               "srcState": {
                 "id": "/f/t/y/A",
@@ -451,7 +453,7 @@
         "id": "/f/t/y",
         "name": "Monitor",
         "transitions": {
-          "1": [
+          "4": [
             {
               "srcState": {
                 "id": "/f/t/y/A",
@@ -497,7 +499,7 @@
         "id": "/f/t/y",
         "name": "Monitor",
         "transitions": {
-          "1": [
+          "4": [
             {
               "srcState": {
                 "id": "/f/t/y/A",
@@ -581,7 +583,7 @@
         "id": "/f/t/y",
         "name": "Monitor",
         "transitions": {
-          "1": [
+          "4": [
             {
               "srcState": {
                 "id": "/f/t/y/A",
@@ -627,7 +629,7 @@
         "id": "/f/t/y",
         "name": "Monitor",
         "transitions": {
-          "1": [
+          "4": [
             {
               "srcState": {
                 "id": "/f/t/y/A",
@@ -711,7 +713,7 @@
         "id": "/f/t/y",
         "name": "Monitor",
         "transitions": {
-          "1": [
+          "4": [
             {
               "srcState": {
                 "id": "/f/t/y/A",
@@ -757,7 +759,7 @@
         "id": "/f/t/y",
         "name": "Monitor",
         "transitions": {
-          "1": [
+          "4": [
             {
               "srcState": {
                 "id": "/f/t/y/A",
