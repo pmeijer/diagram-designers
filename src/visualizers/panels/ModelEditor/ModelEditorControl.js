@@ -1346,9 +1346,12 @@ define(['js/logger',
 
             metaNode = this._client.getNode(baseId);
         }
+
+        return false;
     };
 
-    ModelEditorControl.prototype.getConnectedComponentTypeFromConnectorEnd = function (objDesc) {
+    ModelEditorControl.prototype.getConnectedComponentTypeFromConnectorEnd = function (objDesc, includeConns) {
+        // This also includes CompoundTypes
         var self = this,
             connectorEndNode = this._client.getNode(objDesc.id),
             sources = connectorEndNode.getCollectionPaths('src'),
@@ -1358,7 +1361,6 @@ define(['js/logger',
             var connectionNode = self._client.getNode(connId),
                 transitionId,
                 portNode,
-                componentTypeItemId,
                 componentTypeNode;
 
             if (connectionNode && self.isOfMetaTypeName(connectionNode.getMetaTypeId(), 'Connection')) {
@@ -1369,10 +1371,15 @@ define(['js/logger',
 
                     componentTypeNode = self._client.getNode(portNode.getParentId());
                     if (componentTypeNode &&
-                        componentTypeNode.getParentId() === self.currentNodeInfo.id &&
+                            // loosen this constraint s.t. moving of nodes includes the Conns
+                        (componentTypeNode.getParentId() === self.currentNodeInfo.id || includeConns) &&
                         self.isOfMetaTypeName(componentTypeNode.getMetaTypeId(), ['ComponentType', 'CompoundType'])) {
 
-                        result.push(componentTypeNode.getId());
+                        if (includeConns) {
+                            result[componentTypeNode.getId()] = connectionNode.getId();
+                        } else {
+                            result.push(componentTypeNode.getId());
+                        }
                     }
                 }
             }
@@ -1459,6 +1466,37 @@ define(['js/logger',
         });
 
         return result;
+    };
+
+    ModelEditorControl.prototype.getInferredConnections = function (gmeIDs) {
+        var self = this,
+            currentNode = self._client.getNode(this.currentNodeInfo.id),
+            connIds = [];
+        if (currentNode &&
+            self.isOfMetaTypeName(currentNode.getMetaTypeId(), ['Project', 'CompoundType']) &&
+            gmeIDs.length >= 2) {
+
+            console.log('More than two selected objects will check for inferred Connection-types');
+            gmeIDs.forEach(function (id) {
+                var nodeObj = self._client.getNode(id),
+                    res;
+                // First get all selected "ConnectorEnd"-s
+                if (nodeObj && self.isOfMetaTypeName(nodeObj.getMetaTypeId(), 'ConnectorEnd')) {
+                    res = self.getConnectedComponentTypeFromConnectorEnd({id: id}, true);
+                    console.log('ConnectorEnd is connected via', res);
+                    Object.keys(res).forEach(function (componentId) {
+                        if (gmeIDs.indexOf(componentId) > -1 && connIds.indexOf(res[componentId]) === -1) {
+                            connIds.push(res[componentId]);
+                        }
+                    });
+                }
+            });
+
+            console.log('Adding inferred Connections', connIds);
+
+        }
+
+        return connIds;
     };
 
     ModelEditorControl.getDefaultConfig = function () {
