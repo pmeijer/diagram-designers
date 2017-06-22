@@ -37,6 +37,7 @@ define([
     // API used by Container Controller
     BIPExecutionVizControl.prototype.initializeSimulation = function (resultData) {
         var self = this,
+            instanceId,
             initialStateDecorator,
             initialStateId,
             initialColors = [],
@@ -54,8 +55,9 @@ define([
             this.designerCanvas.$filterUl.empty();
             initialStateId = this._getInitialStateId();
 
-            for (i = 1; i <= cardinality; i += 1) {
-                this._instances[i] = {
+            for (i = 0; i < cardinality; i += 1) {
+                instanceId = resultData.info.componentTypes[this.currentNodeInfo.id].ids[i];
+                this._instances[instanceId] = {
                     color: this._chance.color({format: 'rgb'}),
                     active: true,
                     stateId: initialStateId,
@@ -67,14 +69,14 @@ define([
                 });
 
                 iconEl.css({
-                    color: this._instances[i].color
+                    color: this._instances[instanceId].color
                 });
 
-                this.designerCanvas.addFilterItem(i.toString(), i, iconEl);
+                this.designerCanvas.addFilterItem(instanceId.toString(), instanceId, iconEl);
 
                 iconEl = undefined;
 
-                initialColors.push(this._instances[i].color);
+                initialColors.push(this._instances[instanceId].color);
             }
 
         } catch (err) {
