@@ -40,12 +40,40 @@ define([], function () {
             currentNode;
 
         function checkComponentType(node) {
-            return core.loadChildren(node)
-                .then(function (children) {
-                    children.forEach(function (/*childNode*/) {
-                        //console.log(core.getAttribute(childNode, 'name'), ' - ', core.getPath(childNode));
+            var id;
+            var initStateNum = 0;
+            try {
+                id = core.getPath(node);
+                if (id !== data.info.componentTypes[id]) { // check a component type does exist
+                    result.violation.push({
+                        message: 'Missing nodes in resulted data.',
+                        severity: 'error',
                     });
-                });
+                } else {
+                    return core.loadChildren(node) // check each component type has unique initial state
+                        .then(function (children) {
+                            children.forEach(function (childNode) {
+                                var childMetaType = core.getBaseType(childNode);
+                                if (childMetaType === 'InitialState') {
+                                    initStateNum = initStateNum + 1;
+                                }
+                                //console.log(core.getAttribute(childNode, 'name'), ' - ', core.getPath(childNode));
+                            });
+                        })
+                        .then(function () {
+                            if (initStateNum > 1) {
+                                result.violation.push({
+                                    message: 'Component type has more than one initial state',
+                                    severity: 'error',
+                                });
+                            }
+
+                        });
+                }
+            } catch (err) {
+                done(err);
+            }
+
         }
 
         function visitorFn(node, done) {
