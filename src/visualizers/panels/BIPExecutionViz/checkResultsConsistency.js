@@ -3,7 +3,7 @@
  * @author pmeijer / https://github.com/pmeijer
  */
 
-define([], function () {
+define(['q'], function (Q) {
     'use strict';
 
     /**
@@ -42,36 +42,34 @@ define([], function () {
         function checkComponentType(node) {
             var id;
             var initStateNum = 0;
-            try {
-                id = core.getPath(node);
-                if (id !== data.info.componentTypes[id]) { // check a component type does exist
-                    result.violation.push({
-                        message: 'Missing nodes in resulted data.',
-                        severity: 'error',
-                    });
-                } else {
-                    return core.loadChildren(node) // check each component type has unique initial state
-                        .then(function (children) {
-                            children.forEach(function (childNode) {
-                                var childMetaType = core.getBaseType(childNode);
-                                if (childMetaType === 'InitialState') {
-                                    initStateNum = initStateNum + 1;
-                                }
-                                //console.log(core.getAttribute(childNode, 'name'), ' - ', core.getPath(childNode));
-                            });
-                        })
-                        .then(function () {
-                            if (initStateNum > 1) {
-                                result.violation.push({
-                                    message: 'Component type has more than one initial state',
-                                    severity: 'error',
-                                });
-                            }
 
+            id = core.getPath(node);
+            if (!data.info.componentTypes[id]) { // check a component type does exist
+                result.violation = {
+                    message: 'Missing nodes in resulted data.',
+                    severity: 'error',
+                };
+                return Q.resolve();
+            } else {
+                return core.loadChildren(node) // check each component type has unique initial state
+                    .then(function (children) {
+                        children.forEach(function (childNode) {
+                            var childMetaType = core.getBaseType(childNode);
+                            if (childMetaType === 'InitialState') {
+                                initStateNum = initStateNum + 1;
+                            }
+                            //console.log(core.getAttribute(childNode, 'name'), ' - ', core.getPath(childNode));
                         });
-                }
-            } catch (err) {
-                done(err);
+                    })
+                    .then(function () {
+                        if (initStateNum > 1) {
+                            result.violation = {
+                                message: 'Component type has more than one initial state',
+                                severity: 'error',
+                            };
+                        }
+
+                    });
             }
 
         }
