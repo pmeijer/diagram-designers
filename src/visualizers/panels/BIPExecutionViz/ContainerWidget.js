@@ -266,6 +266,16 @@ define([
         this._configContainer.show();
     };
 
+
+    ContainerWidget.prototype.showWrongResult = function (reason) {
+        this._configContainer.find('.configuration-title')
+            .text('No valid data available');
+        this._configContainer.find('.configuration-desc')
+            .text(reason + ' To generate results invoke the Java BIP Engine plugin on the project.');
+
+        this._configContainer.show();
+    };
+
     ContainerWidget.prototype.removeNode = function (gmeId) {
         var desc = this.nodes[gmeId];
         this._el.append('<div>Removing node "' + desc.name + '"</div>');

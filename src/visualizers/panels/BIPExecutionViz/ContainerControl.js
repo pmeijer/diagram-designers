@@ -271,6 +271,12 @@ define([
                     self._widget.hideProgressbar();
                     if (result.violation) {
                         self._client.notifyUser(result.violation);
+                        if (result.violation.severity === 'error') {
+                            self._widget.showWrongResult('The engine-output stored in the model is not consistent ' +
+                                'with current state of the model.');
+                            self._widget.hideProgressbar();
+                            return;
+                        }
                     } else {
                         self._client.notifyUser({
                             severity: 'success',
@@ -283,6 +289,8 @@ define([
                     });
                 })
                 .catch(function (err) {
+                    self._widget.showWrongResult('The engine-output is most likely of the wrong format.');
+
                     self._client.notifyUser({
                         message: 'Failed obtaining engineOutput from Project.',
                         severity: 'error'
@@ -291,8 +299,8 @@ define([
                     self.logger.error(err);
                     self._widget.hideProgressbar();
                 });
-
         } else {
+            self._widget.showWrongResult('No engine-output stored in the model.');
             this._widget.hideProgressbar();
         }
     };
